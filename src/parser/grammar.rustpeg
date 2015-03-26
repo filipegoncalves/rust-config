@@ -1,0 +1,71 @@
+use super::{SettingsList, Setting, Value, ScalarValue, ArrayValue, ListValue};
+use syntax::parse;
+
+#[pub]
+conf -> SettingsList
+    = l:settings_list { l }
+
+settings_list -> SettingsList
+    = l:setting*
+      {
+          let mut res = SettingsList::new();
+          for setting in l.into_iter() {
+              res.insert(setting.name.clone(), setting);
+          }
+          res
+      }
+
+setting -> Setting
+    = blanks* n:name blanks* (":" / "=") blanks* v:value blanks* ";" blanks* { Setting::new(n, v) }
+
+value -> Value
+    = sv:scalar_value { Value::Svalue(sv) }
+    / av:array_value { Value::Array(av) }
+    / lv:list_value { Value::List(lv) }
+    / gv:group_value { Value::Group(gv) }
+
+scalar_value -> ScalarValue
+    = v:boolean_scalar_value { v }
+    / v:floating64_scalar_value { v }
+    / v:floating32_scalar_value { v }
+    / v:integer64_scalar_value { v }
+    / v:integer32_scalar_value { v }
+    / v:str_scalar_value { v }
+
+array_value -> ArrayValue
+    = "[" l:scalar_value ** (blanks* "," blanks*) "]" { l }
+
+list_value -> ListValue
+    = "(" l:value ** (blanks* "," blanks*) ")" { l }
+
+group_value -> SettingsList
+    = "{" sl:settings_list "}" { sl }
+
+name -> String
+    = [a-zA-Z][-a-zA-Z0-9_]* { match_str.to_string() }
+
+boolean_scalar_value -> ScalarValue
+    = [Tt][Rr][Uu][Ee] { ScalarValue::Boolean(true) }
+    / [Yy][Ee][Ss] { ScalarValue::Boolean(true) }
+    / [Ff][Aa][Ll][Ss][Ee] { ScalarValue::Boolean(false) }
+    / [Nn][Oo] { ScalarValue::Boolean(false) }
+
+integer32_scalar_value -> ScalarValue
+    = [+-]?[0-9]+ { ScalarValue::Integer32(match_str.parse::<i32>().unwrap()) }
+
+integer64_scalar_value -> ScalarValue
+    = [+-]?[0-9]+"L" { ScalarValue::Integer64((&match_str[..match_str.len()-1]).parse::<i64>().unwrap()) }
+
+floating32_scalar_value -> ScalarValue
+    = [+-]?([0-9]*)?"."[0-9]*([eE][+-]?[0-9]+)? { ScalarValue::Floating32(match_str.parse::<f32>().unwrap()) }
+    / [+-]([0-9]+)("."[0-9]*)?[eE][+-]?[0-9]+ { ScalarValue::Floating32(match_str.parse::<f32>().unwrap()) }
+
+floating64_scalar_value -> ScalarValue
+    = ([+-]?([0-9]*)?"."[0-9]*([eE][+-]?[0-9]+)?)"L" { ScalarValue::Floating64((&match_str[..match_str.len()-1]).parse::<f64>().unwrap()) }
+    / ([+-]([0-9]+)("."[0-9]*)?[eE][+-]?[0-9]+)"L" { ScalarValue::Floating64((&match_str[..match_str.len()-1]).parse::<f64>().unwrap()) }
+
+str_scalar_value -> ScalarValue
+    = "\"" ([^\"\\]/"\\".)* "\"" { ScalarValue::Str(parse::str_lit(&match_str[1..match_str.len()-1])) }
+
+blanks = [ \t\r\n]
+empty = blanks*
