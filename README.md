@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/filipegoncalves/rust-config.svg?branch=master)](https://travis-ci.org/filipegoncalves/rust-config)
+
 A soon-to-be Rust library to read and parse configuration files.
 
 The idea is to make it very similar to [libconfig](http://www.hyperrealm.com/libconfig/).
