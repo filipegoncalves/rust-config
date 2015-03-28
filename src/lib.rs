@@ -7,11 +7,4 @@ extern crate syntax;
 
 pub mod parser;
 
-#[cfg(test)] use parser::{SettingsList, Setting, Value, ScalarValue, ArrayValue, ListValue};
-
-#[test]
-fn it_works() {
-    let mut expected = SettingsList::new();
-    expected.insert("my_test".to_string(), Setting::new("my_test".to_string(), Value::Svalue(ScalarValue::Boolean(true))));
-    assert_eq!(parser::parse("my_test = true;"), Ok(expected));
-}
+// TODO Implement wrapper methods around parser and expose a nice public API

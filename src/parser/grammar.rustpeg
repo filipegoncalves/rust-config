@@ -33,10 +33,11 @@ scalar_value -> ScalarValue
     / v:str_scalar_value { v }
 
 array_value -> ArrayValue
-    = "[" l:scalar_value ** (blanks* "," blanks*) "]" { l }
+    = "[" blanks* l:scalar_value ** (blanks* "," blanks*) blanks* "]" { l }
+    / "[" blanks* "]" { Vec::new() }
 
 list_value -> ListValue
-    = "(" l:value ** (blanks* "," blanks*) ")" { l }
+    = "(" blanks* l:value ** (blanks* "," blanks*) blanks* ")" { l }
 
 group_value -> SettingsList
     = "{" sl:settings_list "}" { sl }
@@ -57,8 +58,8 @@ integer64_scalar_value -> ScalarValue
     = [+-]?[0-9]+"L" { ScalarValue::Integer64((&match_str[..match_str.len()-1]).parse::<i64>().unwrap()) }
 
 floating32_scalar_value -> ScalarValue
-    = [+-]?([0-9]*)?"."[0-9]*([eE][+-]?[0-9]+)? { ScalarValue::Floating32(match_str.parse::<f32>().unwrap()) }
-    / [+-]([0-9]+)("."[0-9]*)?[eE][+-]?[0-9]+ { ScalarValue::Floating32(match_str.parse::<f32>().unwrap()) }
+     = [+-]?([0-9]*)?"."[0-9]*([eE][+-]?[0-9]+)? { ScalarValue::Floating32(match_str.parse::<f32>().unwrap()) }
+     / [+-]([0-9]+)("."[0-9]*)?[eE][+-]?[0-9]+ { ScalarValue::Floating32(match_str.parse::<f32>().unwrap()) }
 
 floating64_scalar_value -> ScalarValue
     = ([+-]?([0-9]*)?"."[0-9]*([eE][+-]?[0-9]+)?)"L" { ScalarValue::Floating64((&match_str[..match_str.len()-1]).parse::<f64>().unwrap()) }
