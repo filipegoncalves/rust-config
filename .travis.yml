@@ -1,1 +1,6 @@
 language: rust
+notifications:
+  email:
+    recipients:
+      - filipe@codinghighway.com
+  irc: "irc.mozilla.org#rust-config"
