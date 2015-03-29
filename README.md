@@ -1,6 +1,4 @@
-[![Build Status](https://travis-ci.org/filipegoncalves/rust-config.svg?branch=master)](https://travis-ci.org/filipegoncalves/rust-config)
-
-# config
+# config [![Build Status](https://travis-ci.org/filipegoncalves/rust-config.svg?branch=master)](https://travis-ci.org/filipegoncalves/rust-config)
 
 A soon-to-be Rust library to read and parse configuration files.
 
