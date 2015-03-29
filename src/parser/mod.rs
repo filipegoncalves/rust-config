@@ -1,38 +1,251 @@
+//! The core parser module.
+//! Upon successfully parsing a configuration, a `SettingsList` is created. Conceptually, a
+//! `SettingsList` is a map associating settings names' to a `Value`.
+//!
+//! This map is the basis for the rest of the library. The public library API is nothing more
+//! than a simple set of wrappers to make it easier to manage a `SettingsList`.
+//!
+//! When a parse call is invoked, a settings list is built as input is read. It is not expected that
+//! library users manipulate or otherwise deal directly with these internal data structures,
+//! although, of course, they are free to do so.
+//!
+//! Most of the setting types allowed in a configuration will pretty much map to either a Rust
+//! primitive type or a container.
+//!
+//! # Examples
+//! This example shows how to create a settings list and store a `Boolean` scalar value named
+//! *my_setting* with the boolean value `true`.
+//!
+//! The first step is to create a new, empty settings list:
+//!
+//! ```
+//! use config::parser::SettingsList;
+//! # use config::parser::ScalarValue;
+//! # use config::parser::Value;
+//! # use config::parser::Setting;
+//!
+//! let mut my_settings_list = SettingsList::new();
+//! # let setting_name = "my_setting".to_string();
+//! # let a_scalar = ScalarValue::Boolean(true);
+//! # let setting_value = Value::Svalue(a_scalar);
+//! # let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! # my_settings_list.insert(setting_name, my_setting);
+//! ```
+//!
+//! Next, we define the setting name as *my_setting*:
+//!
+//! ```
+//! # use config::parser::SettingsList;
+//! # use config::parser::ScalarValue;
+//! # use config::parser::Value;
+//! # use config::parser::Setting;
+//!
+//! # let mut my_settings_list = SettingsList::new();
+//! let setting_name = "my_setting".to_string();
+//! # let a_scalar = ScalarValue::Boolean(true);
+//! # let setting_value = Value::Svalue(a_scalar);
+//! # let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! # my_settings_list.insert(setting_name, my_setting);
+//! ```
+//!
+//! Then, we create a boolean scalar value holding `true`:
+//!
+//! ```
+//! # use config::parser::SettingsList;
+//! use config::parser::ScalarValue;
+//! # use config::parser::Value;
+//! # use config::parser::Setting;
+//!
+//! # let mut my_settings_list = SettingsList::new();
+//! # let setting_name = "my_setting".to_string();
+//! let a_scalar = ScalarValue::Boolean(true);
+//! # let setting_value = Value::Svalue(a_scalar);
+//! # let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! # my_settings_list.insert(setting_name, my_setting);
+//! ```
+//!
+//! ... and we wrap it in a `Value`, because settings store generic values:
+//!
+//! ```
+//! # use config::parser::SettingsList;
+//! # use config::parser::ScalarValue;
+//! use config::parser::Value;
+//! # use config::parser::Setting;
+//!
+//! # let mut my_settings_list = SettingsList::new();
+//! # let setting_name = "my_setting".to_string();
+//! # let a_scalar = ScalarValue::Boolean(true);
+//! let setting_value = Value::Svalue(a_scalar);
+//! # let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! # my_settings_list.insert(setting_name, my_setting);
+//! ```
+//!
+//! And finally, we create the new setting:
+//!
+//! ```
+//! # use config::parser::SettingsList;
+//! # use config::parser::ScalarValue;
+//! # use config::parser::Value;
+//! use config::parser::Setting;
+//!
+//! # let mut my_settings_list = SettingsList::new();
+//! # let setting_name = "my_setting".to_string();
+//! # let a_scalar = ScalarValue::Boolean(true);
+//! # let setting_value = Value::Svalue(a_scalar);
+//! let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! # my_settings_list.insert(setting_name, my_setting);
+//! ```
+//! ... and insert it into the settings list:
+//!
+//! ```
+//! # use config::parser::SettingsList;
+//! # use config::parser::ScalarValue;
+//! # use config::parser::Value;
+//! # use config::parser::Setting;
+//!
+//! # let mut my_settings_list = SettingsList::new();
+//! # let setting_name = "my_setting".to_string();
+//! # let a_scalar = ScalarValue::Boolean(true);
+//! # let setting_value = Value::Svalue(a_scalar);
+//! # let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! my_settings_list.insert(setting_name, my_setting);
+//! ```
+//!
+//! Here's the complete example:
+//! ```
+//! use config::parser::SettingsList;
+//! use config::parser::ScalarValue;
+//! use config::parser::Value;
+//! use config::parser::Setting;
+//!
+//! let mut my_settings_list = SettingsList::new();
+//! let setting_name = "my_setting".to_string();
+//! let a_scalar = ScalarValue::Boolean(true);
+//! let setting_value = Value::Svalue(a_scalar);
+//! let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! my_settings_list.insert(setting_name, my_setting);
+//! ```
+//!
+
 use std::collections::HashMap;
 
+/// Settings list representation. Associates settings to their names.
+#[unstable = "Library still under heavy development; design may change."]
 pub type SettingsList = HashMap<String, Setting>;
 
+/// A `Setting` representation. Settings have a name and a value.
 #[derive(PartialEq)]
 #[derive(Debug)]
+#[unstable = "Library still under heavy development; design may change."]
 pub struct Setting {
+    /// Setting name, as read from the configuration file
     pub name: String,
+    /// This setting's value. A value can be a scalar, an array, a list, or a group.
     pub value: Value
 }
 
+/// A type representing a generic value. `Setting`s store `Value`s.
 #[derive(PartialEq)]
 #[derive(Debug)]
+#[unstable = "Library still under heavy development; design may change."]
 pub enum Value {
+    /// A scalar
     Svalue(ScalarValue),
+    /// An array
     Array(ArrayValue),
+    /// A list. Arrays can only store scalars of the same type, whereas lists store `Value`s of
+    /// possibly different types, including other lists.
     List(ListValue),
+    /// A group. Basically, a group acts as another configuration file - it stores a `SettingsList`.
     Group(SettingsList)
 }
 
+/// The scalar values representation. Scalar values bind directly to Rust primitive types.
 #[derive(PartialEq)]
 #[derive(Debug)]
+#[unstable = "Library still under heavy development; design may change."]
 pub enum ScalarValue {
+    /// A boolean scalar
     Boolean(bool),
+    /// An i32 scalar
     Integer32(i32),
+    /// An i64 scalar
     Integer64(i64),
+    /// An f32 scalar
     Floating32(f32),
+    /// An f64 scalar
     Floating64(f64),
+    /// A string scalar
     Str(String)
 }
 
+/// The type used to represent the scalars inside an array.
+/// An array can only store scalar values of the same type.
+#[unstable = "Library still under heavy development; design may change."]
 pub type ArrayValue = Vec<ScalarValue>;
+
+/// The type used to represent the generic values inside a list.
+/// Lists are heterogeneous and can store any type of value, including other lists.
+#[unstable = "Library still under heavy development; design may change."]
 pub type ListValue = Vec<Value>;
 
 impl Setting {
+    /// Creates a new setting with a given name and value
+    /// # Examples 
+    /// Let's say we want to create a setting to store an `i32`.
+    /// We start off by creating a `ScalarValue`:
+    ///
+    /// ```
+    /// use config::parser::ScalarValue;
+    /// # use config::parser::Value;
+    /// # use config::parser::Setting;
+    ///
+    /// let setting_scalarvalue = ScalarValue::Integer32(1);
+    /// # let setting_value = Value::Svalue(setting_scalarvalue);
+    /// # let setting_name = "my_setting".to_string();
+    /// # let my_setting = Setting::new(setting_name, setting_value);
+    /// ```
+    ///
+    /// Then, we wrap it into a `Value`, because settings store generic values:
+    ///
+    /// ```
+    /// # use config::parser::ScalarValue;
+    /// use config::parser::Value;
+    /// # use config::parser::Setting;
+    ///
+    /// # let setting_scalarvalue = ScalarValue::Integer32(1);
+    /// let setting_value = Value::Svalue(setting_scalarvalue);
+    /// # let setting_name = "my_setting".to_string();
+    /// # let my_setting = Setting::new(setting_name, setting_value);
+    /// ```
+    ///
+    /// And then we choose a name for our setting and create it:
+    ///
+    /// ```
+    /// # use config::parser::ScalarValue;
+    /// # use config::parser::Value;
+    /// use config::parser::Setting;
+    ///
+    /// # let setting_scalarvalue = ScalarValue::Integer32(1);
+    /// # let setting_value = Value::Svalue(setting_scalarvalue);
+    /// let setting_name = "my_setting".to_string();
+    /// let my_setting = Setting::new(setting_name, setting_value);
+    /// ```
+    ///
+    /// Here's the complete example:
+    ///
+    /// ```
+    /// use config::parser::ScalarValue;
+    /// use config::parser::Value;
+    /// use config::parser::Setting;
+    ///
+    /// let setting_scalarvalue = ScalarValue::Integer32(1);
+    /// let setting_value = Value::Svalue(setting_scalarvalue);
+    /// let setting_name = "my_setting".to_string();
+    /// let my_setting = Setting::new(setting_name, setting_value);
+    /// ```
+    ///
+    #[unstable = "Library still under heavy development; design may change."]
     pub fn new(sname: String, val: Value) -> Setting {
         Setting { name: sname, value: val }
     }
@@ -40,10 +253,7 @@ impl Setting {
 
 peg_file! grammar("grammar.rustpeg");
 
-pub mod prelude {
-    pub use super::grammar::ParseError;
-}
-
+/// Parses a configuration file from a `&str`.
 pub fn parse(config: &str) -> Result<SettingsList, grammar::ParseError> {
     grammar::conf(config)
 }
@@ -139,7 +349,8 @@ mod test {
                                      Value::Svalue(ScalarValue::Integer64(922000000000000000i64))));
         expected.insert("loan_amount".to_string(),
                         Setting::new("loan_amount".to_string(),
-                                     Value::Svalue(ScalarValue::Integer64(8000000000000000001i64))));
+                                     Value::Svalue(ScalarValue::Integer64(
+                                         8000000000000000001i64))));
 
         assert_eq!(parsed.unwrap(), expected);
     }
