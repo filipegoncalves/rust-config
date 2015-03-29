@@ -22,7 +22,7 @@ as soon as the public API is designed and mostly implemented.
 ## Misc
 - [ ] Write tests that are expected to fail
 - [ ] Add missing documentation for undocumented code
-- [ ] Document `parser::ParseErr
+- [ ] Document `parser::ParseErr`
 - [ ] Write misc documentation with a high level description of the module and its features
 - [ ] Write integration tests
 - [ ] Document when, why and how `parse()` returns `Err`
