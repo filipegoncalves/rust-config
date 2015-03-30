@@ -27,3 +27,4 @@ as soon as the public API is designed and mostly implemented.
 - [ ] Write integration tests
 - [ ] Document when, why and how `parse()` returns `Err`
 - [ ] `hex` and `hex64` literals support
+- [ ] Add option to indicate the conf. file encoding
