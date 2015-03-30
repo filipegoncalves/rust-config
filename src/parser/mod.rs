@@ -128,6 +128,12 @@
 //!
 
 use std::collections::HashMap;
+pub use parser::grammar::ParseError;
+use parser::grammar::conf;
+
+#[derive(PartialEq)]
+#[derive(Debug)]
+pub struct Config(SettingsList);
 
 /// Settings list representation. Associates settings to their names.
 #[unstable = "Library still under heavy development; design may change."]
@@ -254,8 +260,8 @@ impl Setting {
 peg_file! grammar("grammar.rustpeg");
 
 /// Parses a configuration file from a `&str`.
-pub fn parse(config: &str) -> Result<SettingsList, grammar::ParseError> {
-    grammar::conf(config)
+pub fn parse(config: &str) -> Result<Config, ParseError> {
+    conf(config).and_then(|sl| Ok(Config(sl)))
 }
 
 #[cfg(test)]
@@ -263,11 +269,13 @@ mod test {
     use super::parse;
     use super::{Value, ScalarValue};
     use super::{SettingsList, Setting};
+    use super::Config;
+
     #[test]
     fn empty_conf() {
         let parsed_conf = parse("");
         assert!(parsed_conf.is_ok());
-        let my_conf = parsed_conf.unwrap();
+        let Config(my_conf) = parsed_conf.unwrap();
         assert_eq!(my_conf.len(), 0);
     }
 
@@ -303,7 +311,7 @@ mod test {
                         Setting::new("UNIX".to_string(),
                                      Value::Svalue(ScalarValue::Boolean(false))));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -326,7 +334,7 @@ mod test {
                         Setting::new("something_big".to_string(),
                                      Value::Svalue(ScalarValue::Integer32(2000000000))));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -352,7 +360,7 @@ mod test {
                                      Value::Svalue(ScalarValue::Integer64(
                                          8000000000000000001i64))));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -421,7 +429,7 @@ mod test {
                         Setting::new("num__".to_string(),
                                      Value::Svalue(ScalarValue::Floating32(2.0e+2))));
           
-      assert_eq!(parsed.unwrap(), expected);
+      assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -437,7 +445,7 @@ mod test {
                         Setting::new("distance".to_string(),
                                      Value::Svalue(ScalarValue::Floating64(10000000000.25))));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -450,7 +458,7 @@ mod test {
                         Setting::new("server_name".to_string(),
                                      Value::Svalue(ScalarValue::Str("testing.org".to_string()))));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -502,7 +510,7 @@ mod test {
                                              "escaped_str=\"Just a \\\"test\\\" with escapes.\";"
                                                  .to_string()))));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -515,6 +523,8 @@ mod test {
                         Setting::new("array_one".to_string(), Value::Array(Vec::new())));
         expected.insert("array_two".to_string(),
                         Setting::new("array_two".to_string(), Value::Array(Vec::new())));
+
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -535,7 +545,7 @@ mod test {
                                          ScalarValue::Boolean(false),
                                          ScalarValue::Boolean(true)])));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -554,7 +564,7 @@ mod test {
                         Setting::new("array".to_string(),
                                      Value::Array(vec![ScalarValue::Integer32(1)])));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -576,7 +586,7 @@ mod test {
                                          ScalarValue::Integer64(6),
                                          ScalarValue::Integer64(7)])));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -598,7 +608,7 @@ mod test {
                                          ScalarValue::Floating32(5.0e-1),
                                          ScalarValue::Floating32(1.0)])));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -613,7 +623,7 @@ mod test {
                                          ScalarValue::Floating64(55937598585.5),
                                          ScalarValue::Floating64(10000000000.25)])));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -652,7 +662,7 @@ mod test {
                                          ScalarValue::Str("hello".to_string()),
                                          ScalarValue::Str("world".to_string())])));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -664,7 +674,7 @@ mod test {
                         Setting::new("list".to_string(), Value::List(Vec::new())));
         expected.insert("final".to_string(),
                         Setting::new("final".to_string(), Value::List(Vec::new())));
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -677,7 +687,7 @@ mod test {
                         Setting::new("list".to_string(),
                                      Value::List(vec![Value::List(vec![Value::List(Vec::new())])])));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -717,7 +727,7 @@ mod test {
                         Setting::new("last_one".to_string(),
                                      Value::List(vec![Value::Svalue(ScalarValue::Boolean(true))])));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 
     #[test]
@@ -772,7 +782,7 @@ mod test {
         expected.insert("my_superb_list".to_string(),
                         Setting::new("my_superb_list".to_string(), Value::List(list_elements)));
 
-        assert_eq!(parsed.unwrap(), expected);                                     
+        assert_eq!(parsed.unwrap(), Config(expected));                                     
                                                                    
     }
 
@@ -852,6 +862,6 @@ mod test {
         expected.insert("application".to_string(),
                         Setting::new("application".to_string(), Value::Group(app_group)));
 
-        assert_eq!(parsed.unwrap(), expected);
+        assert_eq!(parsed.unwrap(), Config(expected));
     }
 }
