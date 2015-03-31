@@ -22,3 +22,44 @@ pub fn from_stream<T: Read>(stream: &mut T) -> Result<Config, ConfigError> {
 pub fn from_str(input: &str) -> Result<Config, ConfigError> {
     parse(input).map_err(|e| from_parse_err(e))
 }
+
+/*
+#[cfg(test)]
+mod test {
+
+    use parser::parse;
+    use parser::Config;
+    use parser::{SettingsList, Setting, Value, ScalarValue};
+    use error::{ConfigError, ConfigErrorKind};
+
+    #[test]
+    fn conf_from_str() {
+        let parsed = parse("windows=NO;\nlinux = true;\nUNIX\t=\nFaLsE;\n");
+        assert!(parsed.is_ok());
+
+        let mut expected = SettingsList::new();
+        expected.insert("windows".to_string(),
+                        Setting::new("windows".to_string(),
+                                     Value::Svalue(ScalarValue::Boolean(false))));
+        expected.insert("linux".to_string(),
+                        Setting::new("linux".to_string(),
+                                     Value::Svalue(ScalarValue::Boolean(true))));
+        expected.insert("UNIX".to_string(),
+                        Setting::new("UNIX".to_string(),
+                                     Value::Svalue(ScalarValue::Boolean(false))));
+
+        assert_eq!(parsed.unwrap(), Config(expected));
+    }
+
+
+    #[test]
+    fn conf_from_str_with_err() {
+        let parsed = parse("windows=NO\nlinux=true;\n");
+        assert!(parsed.is_err());
+        let err: ConfigError = parsed.unwrap_err();
+        assert_eq!(err.kind, ConfigErrorKind::ParseError);
+    }
+
+}
+*/
+
