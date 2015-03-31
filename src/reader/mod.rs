@@ -1,5 +1,6 @@
-
 use std::io::Read;
+use std::path::Path;
+use std::fs::File;
 
 use parser::Config;
 use parser::parse;
@@ -15,9 +16,13 @@ pub fn from_stream<T: Read>(stream: &mut T) -> Result<Config, ConfigError> {
     }
 }
 
-//pub fn from_file(path: String) -> Result<Config, ConfigError> {
-
-//}
+pub fn from_file(path: &Path) -> Result<Config, ConfigError> {
+    let mut file = match File::open(path) {
+        Ok(f) => f,
+        Err(e) => return Err(from_io_err(e))
+    };
+    from_stream(&mut file)
+}
 
 pub fn from_str(input: &str) -> Result<Config, ConfigError> {
     parse(input).map_err(|e| from_parse_err(e))
@@ -26,7 +31,7 @@ pub fn from_str(input: &str) -> Result<Config, ConfigError> {
 #[cfg(test)]
 mod test {
 
-    use super::{from_str, from_stream};
+    use super::{from_str, from_stream, from_file};
 
     use parser::Config;
     use parser::{SettingsList, Setting, Value, ScalarValue};
@@ -36,6 +41,7 @@ mod test {
     use std::io::Error as IoError;
     use std::io::ErrorKind;
     use std::io::Result as IoResult;
+    use std::path::Path;
 
     struct BadStrCursor<'a> {
         cursor: Cursor<&'a [u8]>,
@@ -125,5 +131,11 @@ mod test {
 
         assert!(parsed.is_err());
         assert_eq!(parsed.unwrap_err().kind, ConfigErrorKind::IoError);
+    }
+
+    #[test]
+    fn conf_from_file() {
+        let parsed = from_file(Path::new("examples/sample.conf"));
+        assert!(parsed.is_ok());
     }
 }
