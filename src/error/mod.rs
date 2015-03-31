@@ -5,6 +5,7 @@ use std::io::Error as IoError;
 use parser::ParseError;
 
 /// A generic configuration error type
+#[derive(Debug)]
 #[unstable = "Library still under heavy development; design may change."]
 pub struct ConfigError {
     /// Indicates what kind of error this is
@@ -16,6 +17,8 @@ pub struct ConfigError {
 }
 
 /// Possible error kinds
+#[derive(Debug)]
+#[derive(PartialEq)]
 #[unstable = "Library still under heavy development; design may change."]
 pub enum ConfigErrorKind {
     /// An I/O error. Can only occur if reading from a stream (file, socket, etc.)

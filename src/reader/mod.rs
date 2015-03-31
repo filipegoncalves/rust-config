@@ -23,18 +23,19 @@ pub fn from_str(input: &str) -> Result<Config, ConfigError> {
     parse(input).map_err(|e| from_parse_err(e))
 }
 
-/*
+
 #[cfg(test)]
 mod test {
 
-    use parser::parse;
+    use super::from_str;
+
     use parser::Config;
     use parser::{SettingsList, Setting, Value, ScalarValue};
-    use error::{ConfigError, ConfigErrorKind};
+    use error::{ConfigErrorKind};
 
     #[test]
     fn conf_from_str() {
-        let parsed = parse("windows=NO;\nlinux = true;\nUNIX\t=\nFaLsE;\n");
+        let parsed = from_str("windows=NO;\nlinux = true;\nUNIX\t=\nFaLsE;\n");
         assert!(parsed.is_ok());
 
         let mut expected = SettingsList::new();
@@ -48,18 +49,13 @@ mod test {
                         Setting::new("UNIX".to_string(),
                                      Value::Svalue(ScalarValue::Boolean(false))));
 
-        assert_eq!(parsed.unwrap(), Config(expected));
+        assert_eq!(parsed.unwrap(), Config::new(expected));
     }
-
 
     #[test]
     fn conf_from_str_with_err() {
-        let parsed = parse("windows=NO\nlinux=true;\n");
+        let parsed = from_str("windows=NO\nlinux=true;\n");
         assert!(parsed.is_err());
-        let err: ConfigError = parsed.unwrap_err();
-        assert_eq!(err.kind, ConfigErrorKind::ParseError);
+        assert_eq!(parsed.unwrap_err().kind, ConfigErrorKind::ParseError);
     }
-
 }
-*/
-
