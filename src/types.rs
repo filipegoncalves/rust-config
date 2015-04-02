@@ -70,11 +70,13 @@ pub type ArrayValue = Vec<ScalarValue>;
 pub type ListValue = Vec<Value>;
 
 impl Config {
-    /// Creates a new wrapper `Config` to hold a settings list
+    /// Creates a new wrapper `Config` to hold a `SettingsList`
     #[unstable = "Library still under heavy development; design may change."]
     pub fn new(sl: SettingsList) -> Config {
         Config { settings: sl }
     }
+
+    
 }
 
 impl Setting {
