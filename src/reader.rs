@@ -59,7 +59,7 @@ mod test {
         fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
             self.calls += 1;
             if self.calls >= self.max_calls_before_err {
-                Err(IoError::new(ErrorKind::Other, "An I/O error has occurred.", None))
+                Err(IoError::new(ErrorKind::Other, "An I/O error has occurred."))
             } else {
                 self.cursor.read(buf)
             }

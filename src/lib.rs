@@ -2,7 +2,6 @@
 #![feature(collections, str_char)]
 #![feature(plugin)]
 #![plugin(peg_syntax_ext)]
-#![cfg_attr(test, feature(io))]
 
 extern crate syntax;
 
