@@ -1,3 +1,5 @@
+//! This module defines the internal types used to represent a configuration.
+
 use std::collections::HashMap;
 
 /// The top-level `Config` type that represents a configuration
