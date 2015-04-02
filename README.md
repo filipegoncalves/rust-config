@@ -20,6 +20,7 @@ as soon as the public API is designed and mostly implemented.
 - [ ] Consider splitting the parser into lexer + syntax analyser (much like we would in C with flex + byacc)
 
 ## Misc
+- [ ] Refactor misc types (`Setting`, `SettingsList`, etc) into a separate, independent module.
 - [ ] Write tests that are expected to fail
 - [ ] Add missing documentation for undocumented code
 - [ ] Document `parser::ParseErr`
