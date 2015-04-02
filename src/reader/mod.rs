@@ -2,7 +2,7 @@ use std::io::Read;
 use std::path::Path;
 use std::fs::File;
 
-use parser::Config;
+use types::Config;
 use parser::parse;
 use error::ConfigError;
 use error::{from_io_err, from_parse_err};
@@ -33,8 +33,8 @@ mod test {
 
     use super::{from_str, from_stream, from_file};
 
-    use parser::Config;
-    use parser::{SettingsList, Setting, Value, ScalarValue};
+    use types::Config;
+    use types::{SettingsList, Setting, Value, ScalarValue};
     use error::{ConfigErrorKind};
 
     use std::io::{Read, Cursor};

@@ -13,6 +13,7 @@ as soon as the public API is designed and mostly implemented.
 - [ ] Allow single and multi-line comments in configurations
 - [ ] Add `#include` support to include other configuration files. Not trivial because of the way the parser works
 - [ ] Automatically concatenate blank-separated string literals in the configuration. Useful for settings with big strings
+- [ ] Export a public API to manipulate a configuration in runtime and possibly write it to a file
 
 ## Parser
 - [ ] Fix an annoying bug where the parser won't accept `1E6` as a valid `Floating32` value
@@ -20,7 +21,7 @@ as soon as the public API is designed and mostly implemented.
 - [ ] Consider splitting the parser into lexer + syntax analyser (much like we would in C with flex + byacc)
 
 ## Misc
-- [ ] Refactor misc types (`Setting`, `SettingsList`, etc) into a separate, independent module.
+- [*] Refactor misc types (`Setting`, `SettingsList`, etc) into a separate, independent module.
 - [ ] Write tests that are expected to fail
 - [ ] Add missing documentation for undocumented code
 - [ ] Document `parser::ParseErr`

@@ -1,4 +1,4 @@
-use super::{SettingsList, Setting, Value, ScalarValue, ArrayValue, ListValue};
+use types::{SettingsList, Setting, Value, ScalarValue, ArrayValue, ListValue};
 use syntax::parse;
 
 #[pub]

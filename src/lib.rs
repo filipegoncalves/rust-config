@@ -6,6 +6,8 @@
 
 extern crate syntax;
 
+pub mod types;
+
 // TODO Think whether this should really be public
 // This is only pub to avoid compiler warnings for now
 pub mod parser;
