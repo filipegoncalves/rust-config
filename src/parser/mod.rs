@@ -427,13 +427,13 @@ mod test {
         expected.insert("my_array".to_string(),
                         Setting::new("my_array".to_string(),
                                      Value::Array(vec![
-                                         ScalarValue::Boolean(true),
-                                         ScalarValue::Boolean(true),
-                                         ScalarValue::Boolean(true),
-                                         ScalarValue::Boolean(false),
-                                         ScalarValue::Boolean(false),
-                                         ScalarValue::Boolean(false),
-                                         ScalarValue::Boolean(true)])));
+                                         Value::Svalue(ScalarValue::Boolean(true)),
+                                         Value::Svalue(ScalarValue::Boolean(true)),
+                                         Value::Svalue(ScalarValue::Boolean(true)),
+                                         Value::Svalue(ScalarValue::Boolean(false)),
+                                         Value::Svalue(ScalarValue::Boolean(false)),
+                                         Value::Svalue(ScalarValue::Boolean(false)),
+                                         Value::Svalue(ScalarValue::Boolean(true))])));
 
         assert_eq!(parsed.unwrap(), expected);
     }
@@ -447,12 +447,12 @@ mod test {
         expected.insert("my_array".to_string(),
                         Setting::new("my_array".to_string(),
                                      Value::Array(vec![
-                                         ScalarValue::Integer32(10),
-                                         ScalarValue::Integer32(11),
-                                         ScalarValue::Integer32(12)])));
+                                         Value::Svalue(ScalarValue::Integer32(10)),
+                                         Value::Svalue(ScalarValue::Integer32(11)),
+                                         Value::Svalue(ScalarValue::Integer32(12))])));
         expected.insert("array".to_string(),
                         Setting::new("array".to_string(),
-                                     Value::Array(vec![ScalarValue::Integer32(1)])));
+                                     Value::Array(vec![Value::Svalue(ScalarValue::Integer32(1))])));
 
         assert_eq!(parsed.unwrap(), expected);
     }
@@ -466,15 +466,17 @@ mod test {
         expected.insert("a".to_string(),
                         Setting::new("a".to_string(),
                                      Value::Array(vec![
-                                         ScalarValue::Integer64(9000000000000000000i64),
-                                         ScalarValue::Integer64(8000000000000000002i64),
-                                         ScalarValue::Integer64(5)])));
+                                         Value::Svalue(ScalarValue::Integer64(
+                                             9000000000000000000i64)),
+                                         Value::Svalue(ScalarValue::Integer64(
+                                             8000000000000000002i64)),
+                                         Value::Svalue(ScalarValue::Integer64(5))])));
         expected.insert("b".to_string(),
                         Setting::new("b".to_string(),
                                      Value::Array(vec![
-                                         ScalarValue::Integer64(5),
-                                         ScalarValue::Integer64(6),
-                                         ScalarValue::Integer64(7)])));
+                                         Value::Svalue(ScalarValue::Integer64(5)),
+                                         Value::Svalue(ScalarValue::Integer64(6)),
+                                         Value::Svalue(ScalarValue::Integer64(7))])));
 
         assert_eq!(parsed.unwrap(), expected);
     }
@@ -488,15 +490,15 @@ mod test {
         expected.insert("a".to_string(),
                         Setting::new("a".to_string(),
                                      Value::Array(vec![
-                                         ScalarValue::Floating32(4.5),
-                                         ScalarValue::Floating32(0.5),
-                                         ScalarValue::Floating32(0.25)])));
+                                         Value::Svalue(ScalarValue::Floating32(4.5)),
+                                         Value::Svalue(ScalarValue::Floating32(0.5)),
+                                         Value::Svalue(ScalarValue::Floating32(0.25))])));
 
         expected.insert("b".to_string(),
                         Setting::new("b".to_string(),
                                      Value::Array(vec![
-                                         ScalarValue::Floating32(5.0e-1),
-                                         ScalarValue::Floating32(1.0)])));
+                                         Value::Svalue(ScalarValue::Floating32(5.0e-1)),
+                                         Value::Svalue(ScalarValue::Floating32(1.0))])));
 
         assert_eq!(parsed.unwrap(), expected);
     }
@@ -510,8 +512,8 @@ mod test {
         expected.insert("a".to_string(),
                         Setting::new("a".to_string(),
                                      Value::Array(vec![
-                                         ScalarValue::Floating64(55937598585.5),
-                                         ScalarValue::Floating64(10000000000.25)])));
+                                         Value::Svalue(ScalarValue::Floating64(55937598585.5)),
+                                         Value::Svalue(ScalarValue::Floating64(10000000000.25))])));
 
         assert_eq!(parsed.unwrap(), expected);
     }
@@ -535,22 +537,24 @@ mod test {
         expected.insert("my_strs".to_string(),
                         Setting::new("my_strs".to_string(),
                                      Value::Array(vec![
-                                         ScalarValue::Str("testing.org".to_string()),
-                                         ScalarValue::Str("Just a \"test\" with escapes."
-                                                          .to_string()),
-                                         ScalarValue::Str("He said: 'Hello!'".to_string()),
-                                         ScalarValue::Str("\"\"".to_string()),
-                                         ScalarValue::Str("A backslash in quotes: \"\\\""
-                                                          .to_string()),
-                                         ScalarValue::Str(concat!("escaped_str=\"Just a",
-                                                                  " \\\"test\\\" with escapes.\";")
-                                                          .to_string()),
-                                         ScalarValue::Str("\n\r\t\"".to_string())])));
+                                         Value::Svalue(ScalarValue::Str("testing.org".to_string())),
+                                         Value::Svalue(ScalarValue::Str(
+                                             "Just a \"test\" with escapes.".to_string())),
+                                         Value::Svalue(ScalarValue::Str(
+                                             "He said: 'Hello!'".to_string())),
+                                         Value::Svalue(ScalarValue::Str("\"\"".to_string())),
+                                         Value::Svalue(ScalarValue::Str(
+                                             "A backslash in quotes: \"\\\"".to_string())),
+                                             Value::Svalue(ScalarValue::Str(
+                                                 concat!("escaped_str=\"Just a",
+                                                         " \\\"test\\\" with escapes.\";")
+                                                     .to_string())),
+                                         Value::Svalue(ScalarValue::Str("\n\r\t\"".to_string()))])));
         expected.insert("my_simple_strs".to_string(),
                         Setting::new("my_simple_strs".to_string(),
                                      Value::Array(vec![
-                                         ScalarValue::Str("hello".to_string()),
-                                         ScalarValue::Str("world".to_string())])));
+                                         Value::Svalue(ScalarValue::Str("hello".to_string())),
+                                         Value::Svalue(ScalarValue::Str("world".to_string()))])));
 
         assert_eq!(parsed.unwrap(), expected);
     }
@@ -635,8 +639,8 @@ mod test {
         group_in_list.insert("s".to_string(),
                              Setting::new("s".to_string(),
                                           Value::Array(vec![
-                                              ScalarValue::Integer32(1),
-                                              ScalarValue::Integer32(2)])));
+                                              Value::Svalue(ScalarValue::Integer32(1)),
+                                              Value::Svalue(ScalarValue::Integer32(2))])));
         group_in_list.insert("x".to_string(),
                              Setting::new("x".to_string(),
                                           Value::Svalue(ScalarValue::Str("str".to_string()))));
@@ -646,24 +650,28 @@ mod test {
 
 
         let list_elements = vec![
-            Value::Array(vec![ScalarValue::Boolean(true), ScalarValue::Boolean(false)]),
+            Value::Array(vec![
+                Value::Svalue(ScalarValue::Boolean(true)),
+                Value::Svalue(ScalarValue::Boolean(false))]),
             Value::Svalue(ScalarValue::Integer32(21)),
-            Value::Array(vec![ScalarValue::Floating32(0.25), ScalarValue::Floating32(0.5),
-                              ScalarValue::Floating32(0.125)]),
+            Value::Array(vec![
+                Value::Svalue(ScalarValue::Floating32(0.25)),
+                Value::Svalue(ScalarValue::Floating32(0.5)),
+                Value::Svalue(ScalarValue::Floating32(0.125))]),
             Value::List(vec![Value::List(Vec::new())]),
             Value::List(vec![Value::List(vec![Value::Svalue(ScalarValue::Str("a".to_string()))])]),
             Value::List(vec![Value::Svalue(ScalarValue::Str("a".to_string()))]),
-            Value::Array(vec![ScalarValue::Str("\"x\"".to_string())]),
+            Value::Array(vec![Value::Svalue(ScalarValue::Str("\"x\"".to_string()))]),
             Value::List(vec![Value::Svalue(ScalarValue::Integer32(14)),
-                             Value::Array(vec![ScalarValue::Str("x".to_string())]),
+                             Value::Array(vec![Value::Svalue(ScalarValue::Str("x".to_string()))]),
                              Value::List(vec![Value::Svalue(ScalarValue::Boolean(true)),
                                               Value::List(vec![
                                                   Value::Svalue(ScalarValue::Boolean(false)),
                                                   Value::List(vec![
                                                       Value::Svalue(ScalarValue::Integer32(4))]),
                                                   Value::Array(vec![
-                                                      ScalarValue::Integer32(5),
-                                                      ScalarValue::Integer32(6)])]),
+                                                      Value::Svalue(ScalarValue::Integer32(5)),
+                                                      Value::Svalue(ScalarValue::Integer32(6))])]),
                                               Value::Svalue(ScalarValue::Str("y".to_string()))])]),
             Value::Svalue(ScalarValue::Str("goodbye!\r\n".to_string())),
             Value::Group(group_in_list)];
@@ -723,19 +731,19 @@ mod test {
         group1.insert("my_array".to_string(),
                       Setting::new("my_array".to_string(),
                                    Value::Array(vec![
-                                       ScalarValue::Integer32(10),
-                                       ScalarValue::Integer32(11),
-                                       ScalarValue::Integer32(12)])));
+                                       Value::Svalue(ScalarValue::Integer32(10)),
+                                       Value::Svalue(ScalarValue::Integer32(11)),
+                                       Value::Svalue(ScalarValue::Integer32(12))])));
         group1.insert("flag".to_string(),
                       Setting::new("flag".to_string(), Value::Svalue(ScalarValue::Boolean(true))));
         group1.insert("states".to_string(),
                       Setting::new("states".to_string(),
                                    Value::Array(vec![
-                                       ScalarValue::Str("CT".to_string()),
-                                       ScalarValue::Str("CA".to_string()),
-                                       ScalarValue::Str("TX".to_string()),
-                                       ScalarValue::Str("NV".to_string()),
-                                       ScalarValue::Str("FL".to_string())])));
+                                       Value::Svalue(ScalarValue::Str("CT".to_string())),
+                                       Value::Svalue(ScalarValue::Str("CA".to_string())),
+                                       Value::Svalue(ScalarValue::Str("TX".to_string())),
+                                       Value::Svalue(ScalarValue::Str("NV".to_string())),
+                                       Value::Svalue(ScalarValue::Str("FL".to_string()))])));
 
         let mut app_group = SettingsList::new();
         app_group.insert("window".to_string(),

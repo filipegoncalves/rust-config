@@ -33,8 +33,15 @@ scalar_value -> ScalarValue
     / v:str_scalar_value { v }
 
 array_value -> ArrayValue
-    = "[" blanks* l:scalar_value ** (blanks* "," blanks*) blanks* "]" { l }
-    / "[" blanks* "]" { Vec::new() }
+    = "[" blanks* l:scalar_value ** (blanks* "," blanks*) blanks* "]"
+       {
+          let mut res = ArrayValue::new();
+          for scalar_val in l.into_iter() {
+              res.push(Value::Svalue(scalar_val));
+          }
+          res
+       }
+    / "[" blanks* "]" { ArrayValue::new() }
 
 list_value -> ListValue
     = "(" blanks* l:value ** (blanks* "," blanks*) blanks* ")" { l }

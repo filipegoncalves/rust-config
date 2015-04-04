@@ -63,7 +63,7 @@ pub enum ScalarValue {
 /// The type used to represent the scalars inside an array.
 /// An array can only store scalar values of the same type.
 #[unstable = "Library still under heavy development; design may change."]
-pub type ArrayValue = Vec<ScalarValue>;
+pub type ArrayValue = Vec<Value>;
 
 /// The type used to represent the generic values inside a list.
 /// Lists are heterogeneous and can store any type of value, including other lists.
