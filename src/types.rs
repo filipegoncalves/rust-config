@@ -1,4 +1,5 @@
-//! This module defines the internal types used to represent a configuration.
+//! This module defines the internal types used to represent a configuration and the corresponding
+//! primitives to browse a successfully parsed configuration.
 
 use std::collections::HashMap;
 
@@ -239,7 +240,7 @@ mod test {
 
     #[test]
     fn lookup_nested_empty_list() {
-        // list = ((()));
+        // ((()));
         let mut my_settings = SettingsList::new();
         my_settings.insert("list".to_string(),
                            Setting::new("list".to_string(),
@@ -284,188 +285,73 @@ mod test {
 
     }
 
-/*
+
     #[test]
-    fn empty_array() {
-        let parsed = parse_conf("array_one = [\n\n\n\n\n];\r\narray_two=[];");
+    fn lookup_array() {
+        let mut my_settings = SettingsList::new();
+        my_settings.insert("my_array".to_string(),
+                           Setting::new("my_array".to_string(),
+                                        Value::Array(vec![
+                                            Value::Svalue(ScalarValue::Boolean(true)),
+                                            Value::Svalue(ScalarValue::Boolean(false)),
+                                            Value::Svalue(ScalarValue::Boolean(true))])));
 
-        assert!(parsed.is_ok());
-        let mut expected = SettingsList::new();
-        expected.insert("array_one".to_string(),
-                        Setting::new("array_one".to_string(), Value::Array(Vec::new())));
-        expected.insert("array_two".to_string(),
-                        Setting::new("array_two".to_string(), Value::Array(Vec::new())));
+        let my_conf = Config::new(my_settings);
 
-        assert_eq!(parsed.unwrap(), expected);
+        let value0 = my_conf.lookup("my_array.[0]");
+        assert!(value0.is_some());
+        assert_eq!(value0.unwrap(), &Value::Svalue(ScalarValue::Boolean(true)));
+
+        let value1 = my_conf.lookup("my_array.[1]");
+        assert!(value1.is_some());
+        assert_eq!(value1.unwrap(), &Value::Svalue(ScalarValue::Boolean(false)));
+
+        let value2 = my_conf.lookup("my_array.[2]");
+        assert!(value2.is_some());
+        assert_eq!(value2.unwrap(), &Value::Svalue(ScalarValue::Boolean(true)));
     }
 
     #[test]
-    fn simple_boolean_array() {
-        let parsed = parse_conf("my_array = [true, true, YEs, No, FaLSE, false, true];");
+    fn lookup_values_list() {
 
-        assert!(parsed.is_ok());
+        /* my_superb_list = (
+         *     [yes, no],
+         *     21,
+         *     [0.25, .5, .125],
+         *     (()),
+         *     (("a")),
+         *     ("a"),
+         *     ["\"x\""],
+         *     (
+         *         14,
+         *         ["x"],
+         *         (
+         *             true,
+         *             (
+         *                 false,
+         *                 (
+         *                     4
+         *                 ),
+         *                 [5, 6]
+         *             ),
+         *             "y"
+         *         )
+         *    ),
+         *    "goodbye!\r\n",
+         *    {
+         *        s = [1, 2];
+         *        x = "str";
+         *        y = ();
+         *    }
+         * )
+         */
 
-        let mut expected = SettingsList::new();
-        expected.insert("my_array".to_string(),
-                        Setting::new("my_array".to_string(),
-                                     Value::Array(vec![
-                                         ScalarValue::Boolean(true),
-                                         ScalarValue::Boolean(true),
-                                         ScalarValue::Boolean(true),
-                                         ScalarValue::Boolean(false),
-                                         ScalarValue::Boolean(false),
-                                         ScalarValue::Boolean(false),
-                                         ScalarValue::Boolean(true)])));
-
-        assert_eq!(parsed.unwrap(), expected);
-    }
-
-    #[test]
-    fn simple_integer32_array() {
-        let parsed = parse_conf("my_array: [10, 11, 12];\narray = [1];\n");
-        assert!(parsed.is_ok());
-
-        let mut expected = SettingsList::new();
-        expected.insert("my_array".to_string(),
-                        Setting::new("my_array".to_string(),
-                                     Value::Array(vec![
-                                         ScalarValue::Integer32(10),
-                                         ScalarValue::Integer32(11),
-                                         ScalarValue::Integer32(12)])));
-        expected.insert("array".to_string(),
-                        Setting::new("array".to_string(),
-                                     Value::Array(vec![ScalarValue::Integer32(1)])));
-
-        assert_eq!(parsed.unwrap(), expected);
-    }
-
-    #[test]
-    fn simple_integer64_array() {
-        let parsed = parse_conf("a=[9000000000000000000L,8000000000000000002L,5L];\nb=[5L,6L,7L];");
-
-        assert!(parsed.is_ok());
-        let mut expected = SettingsList::new();
-        expected.insert("a".to_string(),
-                        Setting::new("a".to_string(),
-                                     Value::Array(vec![
-                                         ScalarValue::Integer64(9000000000000000000i64),
-                                         ScalarValue::Integer64(8000000000000000002i64),
-                                         ScalarValue::Integer64(5)])));
-        expected.insert("b".to_string(),
-                        Setting::new("b".to_string(),
-                                     Value::Array(vec![
-                                         ScalarValue::Integer64(5),
-                                         ScalarValue::Integer64(6),
-                                         ScalarValue::Integer64(7)])));
-
-        assert_eq!(parsed.unwrap(), expected);
-    }
-
-    #[test]
-    fn simple_flt32_array() {
-        let parsed = parse_conf("a=[4.5, 0.5, 0.25]\n;\nb = [5.0e-1, 1.0e0];\n\n");
-        assert!(parsed.is_ok());
-
-        let mut expected = SettingsList::new();
-        expected.insert("a".to_string(),
-                        Setting::new("a".to_string(),
-                                     Value::Array(vec![
-                                         ScalarValue::Floating32(4.5),
-                                         ScalarValue::Floating32(0.5),
-                                         ScalarValue::Floating32(0.25)])));
-
-        expected.insert("b".to_string(),
-                        Setting::new("b".to_string(),
-                                     Value::Array(vec![
-                                         ScalarValue::Floating32(5.0e-1),
-                                         ScalarValue::Floating32(1.0)])));
-
-        assert_eq!(parsed.unwrap(), expected);
-    }
-
-    #[test]
-    fn simple_flt64_array() {
-        let parsed = parse_conf("a=[55937598585.5L,10000000000.25L];");
-        assert!(parsed.is_ok());
-
-        let mut expected = SettingsList::new();
-        expected.insert("a".to_string(),
-                        Setting::new("a".to_string(),
-                                     Value::Array(vec![
-                                         ScalarValue::Floating64(55937598585.5),
-                                         ScalarValue::Floating64(10000000000.25)])));
-
-        assert_eq!(parsed.unwrap(), expected);
-    }
-
-    #[test]
-    fn str_arrays() {
-        let parsed = parse_conf(
-            concat!("my_strs = [                          ",
-                    "\"testing.org\"                , ",
-                    "\"Just a \\\"test\\\" with escapes.\",",
-                    "\"He said: 'Hello!'\", ",
-                    "\"\\\"\\\"\"\t\t, ",
-                    "\"A backslash in quotes: \\\"\\\\\\\"\",",
-                    "\"escaped_str=\\\"Just a \\\\\\\"test\\\\\\\" with escapes.\\\";\", ",
-                    "\"\\n\\r\\t\\\"\"\n\n]\n;\n",
-                    "my_simple_strs = [\"hello\", \"world\"];\n"));
-
-        assert!(parsed.is_ok());
-
-        let mut expected = SettingsList::new();
-        expected.insert("my_strs".to_string(),
-                        Setting::new("my_strs".to_string(),
-                                     Value::Array(vec![
-                                         ScalarValue::Str("testing.org".to_string()),
-                                         ScalarValue::Str("Just a \"test\" with escapes."
-                                                          .to_string()),
-                                         ScalarValue::Str("He said: 'Hello!'".to_string()),
-                                         ScalarValue::Str("\"\"".to_string()),
-                                         ScalarValue::Str("A backslash in quotes: \"\\\""
-                                                          .to_string()),
-                                         ScalarValue::Str(concat!("escaped_str=\"Just a",
-                                                                  " \\\"test\\\" with escapes.\";")
-                                                          .to_string()),
-                                         ScalarValue::Str("\n\r\t\"".to_string())])));
-        expected.insert("my_simple_strs".to_string(),
-                        Setting::new("my_simple_strs".to_string(),
-                                     Value::Array(vec![
-                                         ScalarValue::Str("hello".to_string()),
-                                         ScalarValue::Str("world".to_string())])));
-
-        assert_eq!(parsed.unwrap(), expected);
-    }
-
-    #[test]
-    fn empty_list() {
-        let parsed = parse_conf("list=();final=\n(\t  \n) \n;");
-        assert!(parsed.is_ok());
-        let mut expected = SettingsList::new();
-        expected.insert("list".to_string(),
-                        Setting::new("list".to_string(), Value::List(Vec::new())));
-        expected.insert("final".to_string(),
-                        Setting::new("final".to_string(), Value::List(Vec::new())));
-        assert_eq!(parsed.unwrap(), expected);
-    }
-
-    #[test]
-    fn values_list() {
-        let parsed = parse_conf(concat!("my_superb_list = (",
-                                   "[yes, no], 21, [0.25, .5, .125],",
-                                   "(()), ((\"a\")), (\"a\"), [\"\\\"x\\\"\"],",
-                                   "(14, [\"x\"], (true, (false, (4), [5, 6]), \"y\")),",
-                                   "\"goodbye!\\r\\n\", { s = [1, 2]; x = \"str\"; y = (); });\n"));
-                             
-        assert!(parsed.is_ok());
-
-
-        let mut group_in_list = SettingsList::new();
+       let mut group_in_list = SettingsList::new();
         group_in_list.insert("s".to_string(),
                              Setting::new("s".to_string(),
                                           Value::Array(vec![
-                                              ScalarValue::Integer32(1),
-                                              ScalarValue::Integer32(2)])));
+                                              Value::Svalue(ScalarValue::Integer32(1)),
+                                              Value::Svalue(ScalarValue::Integer32(2))])));
         group_in_list.insert("x".to_string(),
                              Setting::new("x".to_string(),
                                           Value::Svalue(ScalarValue::Str("str".to_string()))));
@@ -475,113 +361,60 @@ mod test {
 
 
         let list_elements = vec![
-            Value::Array(vec![ScalarValue::Boolean(true), ScalarValue::Boolean(false)]),
+            Value::Array(vec![
+                Value::Svalue(ScalarValue::Boolean(true)),
+                Value::Svalue(ScalarValue::Boolean(false))]),
             Value::Svalue(ScalarValue::Integer32(21)),
-            Value::Array(vec![ScalarValue::Floating32(0.25), ScalarValue::Floating32(0.5),
-                              ScalarValue::Floating32(0.125)]),
+            Value::Array(vec![
+                Value::Svalue(ScalarValue::Floating32(0.25)),
+                Value::Svalue(ScalarValue::Floating32(0.5)),
+                Value::Svalue(ScalarValue::Floating32(0.125))]),
             Value::List(vec![Value::List(Vec::new())]),
             Value::List(vec![Value::List(vec![Value::Svalue(ScalarValue::Str("a".to_string()))])]),
             Value::List(vec![Value::Svalue(ScalarValue::Str("a".to_string()))]),
-            Value::Array(vec![ScalarValue::Str("\"x\"".to_string())]),
+            Value::Array(vec![Value::Svalue(ScalarValue::Str("\"x\"".to_string()))]),
             Value::List(vec![Value::Svalue(ScalarValue::Integer32(14)),
-                             Value::Array(vec![ScalarValue::Str("x".to_string())]),
+                             Value::Array(vec![Value::Svalue(ScalarValue::Str("x".to_string()))]),
                              Value::List(vec![Value::Svalue(ScalarValue::Boolean(true)),
                                               Value::List(vec![
                                                   Value::Svalue(ScalarValue::Boolean(false)),
                                                   Value::List(vec![
                                                       Value::Svalue(ScalarValue::Integer32(4))]),
                                                   Value::Array(vec![
-                                                      ScalarValue::Integer32(5),
-                                                      ScalarValue::Integer32(6)])]),
+                                                      Value::Svalue(ScalarValue::Integer32(5)),
+                                                      Value::Svalue(ScalarValue::Integer32(6))])]),
                                               Value::Svalue(ScalarValue::Str("y".to_string()))])]),
             Value::Svalue(ScalarValue::Str("goodbye!\r\n".to_string())),
             Value::Group(group_in_list)];
 
-        let mut expected = SettingsList::new();
-        expected.insert("my_superb_list".to_string(),
-                        Setting::new("my_superb_list".to_string(), Value::List(list_elements)));
+        let mut my_settings = SettingsList::new();
+        my_settings.insert("my_superb_list".to_string(),
+                           Setting::new("my_superb_list".to_string(), Value::List(list_elements)));
 
-        assert_eq!(parsed.unwrap(), expected);                                     
-                                                                   
+        let my_conf = Config::new(my_settings);
+
+        let lookup_bool = my_conf.lookup("my_superb_list.[0].[1]");
+        assert!(lookup_bool.is_some());
+        assert_eq!(lookup_bool.unwrap(), &Value::Svalue(ScalarValue::Boolean(false)));
+
+        let lookup_empty_lst = my_conf.lookup("my_superb_list.[3].[0]");
+        assert!(lookup_empty_lst.is_some());
+        assert_eq!(lookup_empty_lst.unwrap(), &Value::List(Vec::new()));
+
+        let lookup_deep = my_conf.lookup("my_superb_list.[7].[2].[1].[2].[1]");
+        assert!(lookup_deep.is_some());
+        assert_eq!(lookup_deep.unwrap(), &Value::Svalue(ScalarValue::Integer32(6)));
+
+        let lookup_str = my_conf.lookup("my_superb_list.[9].x");
+        assert!(lookup_str.is_some());
+        assert_eq!(lookup_str.unwrap(), &Value::Svalue(ScalarValue::Str("str".to_string())));
+
+        let lookup_deep_int = my_conf.lookup("my_superb_list.[9].s.[1]");
+        assert!(lookup_deep_int.is_some());
+        assert_eq!(lookup_deep_int.unwrap(), &Value::Svalue(ScalarValue::Integer32(2)));
+
+        let lookup_empty_lst = my_conf.lookup("my_superb_list.[9].y");
+        assert!(lookup_empty_lst.is_some());
+        assert_eq!(lookup_empty_lst.unwrap(), &Value::List(Vec::new()));
     }
-
-    #[test]
-    fn sample_conf_small() {
-        let parsed = parse_conf(concat!(
-            "\n\napplication:\n",
-            "{\n",
-            "  window:\n",
-            "  {\n",
-            "    title = \"My Application\";\n",
-            "    size = { w = 640; h = 480; };\n",
-            "  };\n",
-            "  a = 5;\n",
-            "  ff = 1.E6;\n",
-            "  group1:\n",
-            "  {\n",
-            "    x = 5;  y = 10;\n",
-            "    my_array = [ 10, 11, 12 ];\n",
-            "    flag = TRUE;\n",
-            "    states = [\"CT\", \"CA\", \"TX\", \"NV\", \"FL\"];",
-            "  };\n",
-            "};\n"));
-
-        assert!(parsed.is_ok());
-
-        let mut size_group = SettingsList::new();
-        size_group.insert("w".to_string(),
-                          Setting::new("w".to_string(),
-                                       Value::Svalue(ScalarValue::Integer32(640))));
-        size_group.insert("h".to_string(),
-                          Setting::new("h".to_string(),
-                                       Value::Svalue(ScalarValue::Integer32(480))));
-
-        let mut window_group = SettingsList::new();
-        window_group.insert("title".to_string(),
-                            Setting::new("title".to_string(),
-                                         Value::Svalue(ScalarValue::Str("My Application"
-                                                                        .to_string()))));
-        window_group.insert("size".to_string(),
-                            Setting::new("size".to_string(), Value::Group(size_group)));
-
-        let mut group1 = SettingsList::new();
-        group1.insert("x".to_string(),
-                      Setting::new("x".to_string(), Value::Svalue(ScalarValue::Integer32(5))));
-        group1.insert("y".to_string(),
-                      Setting::new("y".to_string(), Value::Svalue(ScalarValue::Integer32(10))));
-        group1.insert("my_array".to_string(),
-                      Setting::new("my_array".to_string(),
-                                   Value::Array(vec![
-                                       ScalarValue::Integer32(10),
-                                       ScalarValue::Integer32(11),
-                                       ScalarValue::Integer32(12)])));
-        group1.insert("flag".to_string(),
-                      Setting::new("flag".to_string(), Value::Svalue(ScalarValue::Boolean(true))));
-        group1.insert("states".to_string(),
-                      Setting::new("states".to_string(),
-                                   Value::Array(vec![
-                                       ScalarValue::Str("CT".to_string()),
-                                       ScalarValue::Str("CA".to_string()),
-                                       ScalarValue::Str("TX".to_string()),
-                                       ScalarValue::Str("NV".to_string()),
-                                       ScalarValue::Str("FL".to_string())])));
-
-        let mut app_group = SettingsList::new();
-        app_group.insert("window".to_string(),
-                         Setting::new("window".to_string(), Value::Group(window_group)));
-        app_group.insert("a".to_string(),
-                         Setting::new("a".to_string(), Value::Svalue(ScalarValue::Integer32(5))));
-        app_group.insert("ff".to_string(),
-                         Setting::new("ff".to_string(),
-                                      Value::Svalue(ScalarValue::Floating32(1e6))));
-        app_group.insert("group1".to_string(),
-                         Setting::new("group1".to_string(), Value::Group(group1)));
-
-        let mut expected = SettingsList::new();
-        expected.insert("application".to_string(),
-                        Setting::new("application".to_string(), Value::Group(app_group)));
-
-        assert_eq!(parsed.unwrap(), expected);
-    }
-*/
 }
