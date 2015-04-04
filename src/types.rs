@@ -7,8 +7,7 @@ use std::collections::HashMap;
 #[derive(Debug)]
 #[unstable = "Library still under heavy development; design may change."]
 pub struct Config {
-    /// The settings inside the configuration
-    pub settings: SettingsList
+    root: Value
 }
 
 /// Settings list representation. Associates settings to their names.
@@ -75,10 +74,25 @@ impl Config {
     /// Creates a new wrapper `Config` to hold a `SettingsList`
     #[unstable = "Library still under heavy development; design may change."]
     pub fn new(sl: SettingsList) -> Config {
-        Config { settings: sl }
+        Config { root: Value::Group(sl) }
     }
 
-    
+    /*
+    #[unstable = "Library still under heavy development; design may change."]
+    pub fn lookup(&self, path: &str) -> Option<&Value> {
+        let mut last_value = None;
+        for segment in path.split(".") {
+            let next_value = match last_value {
+                Some(ref value) => {
+                    
+                }
+                None => 
+            }
+            println!("Got segment: {}", segment);
+        }
+        None
+    }
+    */
 }
 
 impl Setting {

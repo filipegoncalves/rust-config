@@ -159,15 +159,14 @@ pub fn parse(config: &str) -> Result<Config, ParseError> {
 
 #[cfg(test)]
 mod test {
-    use super::parse;
-    use types::{Value, ScalarValue, SettingsList, Setting, Config};
+    use super::grammar::conf as parse_conf;
+    use types::{Value, ScalarValue, SettingsList, Setting};
 
     #[test]
     fn empty_conf() {
-        let parsed_conf = parse("");
-        assert!(parsed_conf.is_ok());
-        let my_conf = parsed_conf.unwrap();
-        assert_eq!(my_conf.settings.len(), 0);
+        let parsed = parse_conf("");
+        assert!(parsed.is_ok());
+        assert_eq!(parsed.unwrap().len(), 0);
     }
 
     // TODO Fix this test
@@ -175,10 +174,10 @@ mod test {
     #[test]
     fn blank_conf() {
         let confs = vec![
-            parse("     \n"),
-            parse("\t\t"),
-            parse("\r"),
-            parse("\r\n   \t  \t\r\n\n\n\n\r\r\r\r  \n")];
+            parse_conf("     \n"),
+            parse_conf("\t\t"),
+            parse_conf("\r"),
+            parse_conf("\r\n   \t  \t\r\n\n\n\n\r\r\r\r  \n")];
 
         for pconf in confs.into_iter() {
             assert!(pconf.is_ok());
@@ -188,7 +187,7 @@ mod test {
      */
     #[test]
     fn boolean_scalar_value() {
-        let parsed = parse("windows=NO;\nlinux = true;\nUNIX\t=\nFaLsE;\n");
+        let parsed = parse_conf("windows=NO;\nlinux = true;\nUNIX\t=\nFaLsE;\n");
         assert!(parsed.is_ok());
 
         let mut expected = SettingsList::new();
@@ -202,12 +201,12 @@ mod test {
                         Setting::new("UNIX".to_string(),
                                      Value::Svalue(ScalarValue::Boolean(false))));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn integer32_scalar_value() {
-        let parsed = parse(concat!("\n\nmiles :  3;mpg=27;\nweight_lbs = \t44;\t\n\n",
+        let parsed = parse_conf(concat!("\n\nmiles :  3;mpg=27;\nweight_lbs = \t44;\t\n\n",
                                    "something_big = 2000000000;"));
         assert!(parsed.is_ok());
 
@@ -225,12 +224,12 @@ mod test {
                         Setting::new("something_big".to_string(),
                                      Value::Svalue(ScalarValue::Integer32(2000000000))));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn integer64_scalar_value() {
-        let parsed = parse(concat!("miles: 300000000000000L\r\n;",
+        let parsed = parse_conf(concat!("miles: 300000000000000L\r\n;",
                                    "\r\n\n\nmpg=2L;",
                                    "weight_lbs=922000000000000000L;\n",
                                    "loan_amount : \r\n8000000000000000001L;\t\t"));
@@ -251,12 +250,12 @@ mod test {
                                      Value::Svalue(ScalarValue::Integer64(
                                          8000000000000000001i64))));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn flt32_scalar_value() {
-        let parsed = parse(concat!("width = 5.0e0;\r\n",
+        let parsed = parse_conf(concat!("width = 5.0e0;\r\n",
                                    "height=1040.0e-1;\r\n",
                                    "misc=\t2.5e+4;\r\n",
                                    "height_x=4.0e3;\r\n",
@@ -320,12 +319,12 @@ mod test {
                         Setting::new("num__".to_string(),
                                      Value::Svalue(ScalarValue::Floating32(2.0e+2))));
           
-      assert_eq!(parsed.unwrap(), Config::new(expected));
+      assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn flt64_scalar_value() {
-        let parsed = parse("miles: 55937598585.5L;\tdistance:10000000000.25L;");
+        let parsed = parse_conf("miles: 55937598585.5L;\tdistance:10000000000.25L;");
         assert!(parsed.is_ok());
 
         let mut expected = SettingsList::new();
@@ -336,12 +335,12 @@ mod test {
                         Setting::new("distance".to_string(),
                                      Value::Svalue(ScalarValue::Floating64(10000000000.25))));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn simple_str_scalar_value() {
-        let parsed = parse("\n\nserver_name\t= \"testing.org\"\r\n\r\n;");
+        let parsed = parse_conf("\n\nserver_name\t= \"testing.org\"\r\n\r\n;");
         assert!(parsed.is_ok());
 
         let mut expected = SettingsList::new();
@@ -349,12 +348,12 @@ mod test {
                         Setting::new("server_name".to_string(),
                                      Value::Svalue(ScalarValue::Str("testing.org".to_string()))));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn str_scalar_value() {
-        let parsed = parse(
+        let parsed = parse_conf(
             concat!("\n\n\nserver_name\t= \"testing.org\"\r\n\r\n;\r\n\r\n",
                     "escaped_str=\"Just a \\\"test\\\" with escapes.\";",
                     "str_w_prime = \"He said: 'Hello!'\";\n",
@@ -401,12 +400,12 @@ mod test {
                                              "escaped_str=\"Just a \\\"test\\\" with escapes.\";"
                                                  .to_string()))));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn empty_array() {
-        let parsed = parse("array_one = [\n\n\n\n\n];\r\narray_two=[];");
+        let parsed = parse_conf("array_one = [\n\n\n\n\n];\r\narray_two=[];");
 
         assert!(parsed.is_ok());
         let mut expected = SettingsList::new();
@@ -415,12 +414,12 @@ mod test {
         expected.insert("array_two".to_string(),
                         Setting::new("array_two".to_string(), Value::Array(Vec::new())));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn simple_boolean_array() {
-        let parsed = parse("my_array = [true, true, YEs, No, FaLSE, false, true];");
+        let parsed = parse_conf("my_array = [true, true, YEs, No, FaLSE, false, true];");
 
         assert!(parsed.is_ok());
 
@@ -436,12 +435,12 @@ mod test {
                                          ScalarValue::Boolean(false),
                                          ScalarValue::Boolean(true)])));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn simple_integer32_array() {
-        let parsed = parse("my_array: [10, 11, 12];\narray = [1];\n");
+        let parsed = parse_conf("my_array: [10, 11, 12];\narray = [1];\n");
         assert!(parsed.is_ok());
 
         let mut expected = SettingsList::new();
@@ -455,12 +454,12 @@ mod test {
                         Setting::new("array".to_string(),
                                      Value::Array(vec![ScalarValue::Integer32(1)])));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn simple_integer64_array() {
-        let parsed = parse("a=[9000000000000000000L,8000000000000000002L,5L];\nb=[5L,6L,7L];");
+        let parsed = parse_conf("a=[9000000000000000000L,8000000000000000002L,5L];\nb=[5L,6L,7L];");
 
         assert!(parsed.is_ok());
         let mut expected = SettingsList::new();
@@ -477,12 +476,12 @@ mod test {
                                          ScalarValue::Integer64(6),
                                          ScalarValue::Integer64(7)])));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn simple_flt32_array() {
-        let parsed = parse("a=[4.5, 0.5, 0.25]\n;\nb = [5.0e-1, 1.0e0];\n\n");
+        let parsed = parse_conf("a=[4.5, 0.5, 0.25]\n;\nb = [5.0e-1, 1.0e0];\n\n");
         assert!(parsed.is_ok());
 
         let mut expected = SettingsList::new();
@@ -499,12 +498,12 @@ mod test {
                                          ScalarValue::Floating32(5.0e-1),
                                          ScalarValue::Floating32(1.0)])));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn simple_flt64_array() {
-        let parsed = parse("a=[55937598585.5L,10000000000.25L];");
+        let parsed = parse_conf("a=[55937598585.5L,10000000000.25L];");
         assert!(parsed.is_ok());
 
         let mut expected = SettingsList::new();
@@ -514,12 +513,12 @@ mod test {
                                          ScalarValue::Floating64(55937598585.5),
                                          ScalarValue::Floating64(10000000000.25)])));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn str_arrays() {
-        let parsed = parse(
+        let parsed = parse_conf(
             concat!("my_strs = [                          ",
                     "\"testing.org\"                , ",
                     "\"Just a \\\"test\\\" with escapes.\",",
@@ -553,24 +552,24 @@ mod test {
                                          ScalarValue::Str("hello".to_string()),
                                          ScalarValue::Str("world".to_string())])));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn empty_list() {
-        let parsed = parse("list=();final=\n(\t  \n) \n;");
+        let parsed = parse_conf("list=();final=\n(\t  \n) \n;");
         assert!(parsed.is_ok());
         let mut expected = SettingsList::new();
         expected.insert("list".to_string(),
                         Setting::new("list".to_string(), Value::List(Vec::new())));
         expected.insert("final".to_string(),
                         Setting::new("final".to_string(), Value::List(Vec::new())));
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn nested_empty_list() {
-        let parsed = parse("list=((()));\n");
+        let parsed = parse_conf("list=((()));\n");
         assert!(parsed.is_ok());
 
         let mut expected = SettingsList::new();
@@ -578,12 +577,12 @@ mod test {
                         Setting::new("list".to_string(),
                                      Value::List(vec![Value::List(vec![Value::List(Vec::new())])])));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn scalar_lists() {
-        let parsed = parse(concat!("my_list = (\n\"a \\\"string\\\" with \\nquo\\ttes\",\n",
+        let parsed = parse_conf(concat!("my_list = (\n\"a \\\"string\\\" with \\nquo\\ttes\",\n",
                                    "15, 0.25e+2, 9000000000000000000L, 54, 55937598585.5L,\n",
                                    "yes\n,\ntrue\t,false,NO\n\n\n);\nanother_list=(10, \"0\");\n",
                                    "another_list\n=\n(\n   yes, 19, \"bye\"\n)\n;\n",
@@ -618,12 +617,12 @@ mod test {
                         Setting::new("last_one".to_string(),
                                      Value::List(vec![Value::Svalue(ScalarValue::Boolean(true))])));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
     fn values_list() {
-        let parsed = parse(concat!("my_superb_list = (",
+        let parsed = parse_conf(concat!("my_superb_list = (",
                                    "[yes, no], 21, [0.25, .5, .125],",
                                    "(()), ((\"a\")), (\"a\"), [\"\\\"x\\\"\"],",
                                    "(14, [\"x\"], (true, (false, (4), [5, 6]), \"y\")),",
@@ -673,13 +672,13 @@ mod test {
         expected.insert("my_superb_list".to_string(),
                         Setting::new("my_superb_list".to_string(), Value::List(list_elements)));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));                                     
+        assert_eq!(parsed.unwrap(), expected);                                     
                                                                    
     }
 
     #[test]
     fn sample_conf_small() {
-        let parsed = parse(concat!(
+        let parsed = parse_conf(concat!(
             "\n\napplication:\n",
             "{\n",
             "  window:\n",
@@ -753,6 +752,6 @@ mod test {
         expected.insert("application".to_string(),
                         Setting::new("application".to_string(), Value::Group(app_group)));
 
-        assert_eq!(parsed.unwrap(), Config::new(expected));
+        assert_eq!(parsed.unwrap(), expected);
     }
 }
