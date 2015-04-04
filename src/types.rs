@@ -78,6 +78,41 @@ impl Config {
         Config { root: Value::Group(sl) }
     }
 
+    /// Looks up a value in a configuration. A path is a dot-separated list of settings
+    /// describing the path of the desired value in the configuration.
+    /// Returns `None` if the path is invalid. A path is invalid if it is not syntactically
+    /// well-formed, if it attempts to index an array or list beyond the limit, or if it
+    /// includes an unknown setting.
+    /// # Examples
+    /// Suppose we have loaded a configuration that consists of:
+    ///
+    /// ```text
+    /// my_string = "hello";
+    /// a_list = ([1, 2, 3], true, { x = 4; }, "good bye");
+    /// ```
+    ///
+    /// Then, the path to retrieve `"hello"` is `my_string`.
+    /// The path to retrieve `true` inside `a_list` would be `a_list.[1]`.
+    /// The path to retrieve the setting `x` inside `a_list` would be `alist.[2].x`.
+    ///
+    /// Here's a small demonstration:
+    ///
+    /// ```
+    /// use config::reader::from_str;
+    ///
+    /// let my_conf = from_str("my_string = \"hello\"; a_list = ([1, 2, 3], true, { x = 4; }, \"good_bye\");").unwrap();
+    ///
+    /// let my_str_value = my_conf.lookup("my_string");
+    /// assert!(my_str_value.is_some());
+    ///
+    /// let my_boolean_value = my_conf.lookup("a_list.[1]");
+    /// assert!(my_boolean_value.is_some());
+    ///
+    /// let my_x_setting = my_conf.lookup("a_list.[2].x");
+    /// assert!(my_x_setting.is_some());
+    ///
+    /// ```
+    ///
     #[unstable = "Library still under heavy development; design may change."]
     pub fn lookup(&self, path: &str) -> Option<&Value> {
         let mut last_value = &self.root;
