@@ -87,13 +87,10 @@ impl Config {
                 }
                 if let Ok(index) = (&segment[1..segment.len()-1]).parse::<usize>() {
                     if let &Value::Array(ref arr) = last_value {
-                        /*
                         if index >= arr.len() {
                             return None;
                         }
-                        last_value = Value::Svalue(arr[index].clone());
-                        */
-                        // TODO
+                        last_value = &arr[index];
                     }
                     else if let &Value::List(ref list) = last_value {
                         if index >= list.len() {
