@@ -82,7 +82,30 @@ impl Config {
         let mut last_value = &self.root;
         for segment in path.split(".") {
             if segment.starts_with("[") {
-                println!("array indexing");
+                if !segment.ends_with("]") || segment.len() < 3 {
+                    return None;
+                }
+                if let Ok(index) = (&segment[1..segment.len()-1]).parse::<usize>() {
+                    if let &Value::Array(ref arr) = last_value {
+                        /*
+                        if index >= arr.len() {
+                            return None;
+                        }
+                        last_value = Value::Svalue(arr[index].clone());
+                        */
+                        // TODO
+                    }
+                    else if let &Value::List(ref list) = last_value {
+                        if index >= list.len() {
+                            return None;
+                        }
+                        last_value = &list[index];
+                    } else {
+                        return None;
+                    }
+                } else {
+                    return None;
+                }
             } else {
                 if let &Value::Group(ref settings_list) = last_value {
                     let next_setting = match settings_list.get(&segment[..]) {
@@ -215,6 +238,53 @@ mod test {
         let mpg_lookup = my_conf.lookup("mpg");
         assert!(mpg_lookup.is_some());
         assert_eq!(mpg_lookup.unwrap(), &Value::Svalue(ScalarValue::Integer32(27)));
+    }
+
+    #[test]
+    fn lookup_nested_empty_list() {
+        // list = ((()));
+        let mut my_settings = SettingsList::new();
+        my_settings.insert("list".to_string(),
+                           Setting::new("list".to_string(),
+                                        Value::List(vec![
+                                            Value::List(vec![
+                                                Value::List(Vec::new())])])));
+
+        let my_conf = Config::new(my_settings);
+
+        let first = my_conf.lookup("list.[0]");
+        assert!(first.is_some());
+        assert_eq!(first.unwrap(), &Value::List(vec![Value::List(Vec::new())]));
+
+        let second = my_conf.lookup("list.[0].[0]");
+        assert!(second.is_some());
+        assert_eq!(second.unwrap(), &Value::List(Vec::new()));
+    }
+
+    #[test]
+    fn lookup_scalar_list() {
+
+        let mut my_settings = SettingsList::new();
+        my_settings.insert("my_list".to_string(),
+                        Setting::new("my_list".to_string(),
+                                     Value::List(vec![
+                                         Value::Svalue(
+                                             ScalarValue::Str("a \"string\" with \nquo\ttes"
+                                                              .to_string())),
+                                         Value::Svalue(
+                                             ScalarValue::Integer64(9000000000000000000i64))])));
+
+        let my_conf = Config::new(my_settings);
+
+        let the_string = my_conf.lookup("my_list.[0]");
+        assert!(the_string.is_some());
+        assert_eq!(the_string.unwrap(), &Value::Svalue(ScalarValue::Str(
+            "a \"string\" with \nquo\ttes".to_string())));
+
+        let big_int = my_conf.lookup("my_list.[1]");
+        assert!(big_int.is_some());
+        assert_eq!(big_int.unwrap(), &Value::Svalue(ScalarValue::Integer64(9000000000000000000i64)));
+
     }
 
 /*
@@ -379,59 +449,6 @@ mod test {
                         Setting::new("list".to_string(), Value::List(Vec::new())));
         expected.insert("final".to_string(),
                         Setting::new("final".to_string(), Value::List(Vec::new())));
-        assert_eq!(parsed.unwrap(), expected);
-    }
-
-    #[test]
-    fn nested_empty_list() {
-        let parsed = parse_conf("list=((()));\n");
-        assert!(parsed.is_ok());
-
-        let mut expected = SettingsList::new();
-        expected.insert("list".to_string(),
-                        Setting::new("list".to_string(),
-                                     Value::List(vec![Value::List(vec![Value::List(Vec::new())])])));
-
-        assert_eq!(parsed.unwrap(), expected);
-    }
-
-    #[test]
-    fn scalar_lists() {
-        let parsed = parse_conf(concat!("my_list = (\n\"a \\\"string\\\" with \\nquo\\ttes\",\n",
-                                   "15, 0.25e+2, 9000000000000000000L, 54, 55937598585.5L,\n",
-                                   "yes\n,\ntrue\t,false,NO\n\n\n);\nanother_list=(10, \"0\");\n",
-                                   "another_list\n=\n(\n   yes, 19, \"bye\"\n)\n;\n",
-                                   "last_one:(true);\n"));
-
-        assert!(parsed.is_ok());
-
-        let mut expected = SettingsList::new();
-        expected.insert("my_list".to_string(),
-                        Setting::new("my_list".to_string(),
-                                     Value::List(vec![
-                                         Value::Svalue(
-                                             ScalarValue::Str("a \"string\" with \nquo\ttes"
-                                                              .to_string())),
-                                         Value::Svalue(ScalarValue::Integer32(15)),
-                                         Value::Svalue(ScalarValue::Floating32(0.25e+2)),
-                                         Value::Svalue(
-                                             ScalarValue::Integer64(9000000000000000000i64)),
-                                         Value::Svalue(ScalarValue::Integer32(54)),
-                                         Value::Svalue(ScalarValue::Floating64(55937598585.5f64)),
-                                         Value::Svalue(ScalarValue::Boolean(true)),
-                                         Value::Svalue(ScalarValue::Boolean(true)),
-                                         Value::Svalue(ScalarValue::Boolean(false)),
-                                         Value::Svalue(ScalarValue::Boolean(false))])));
-        expected.insert("another_list".to_string(),
-                        Setting::new("another_list".to_string(),
-                                     Value::List(vec![
-                                         Value::Svalue(ScalarValue::Boolean(true)),
-                                         Value::Svalue(ScalarValue::Integer32(19)),
-                                         Value::Svalue(ScalarValue::Str("bye".to_string()))])));
-        expected.insert("last_one".to_string(),
-                        Setting::new("last_one".to_string(),
-                                     Value::List(vec![Value::Svalue(ScalarValue::Boolean(true))])));
-
         assert_eq!(parsed.unwrap(), expected);
     }
 
