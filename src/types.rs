@@ -153,6 +153,84 @@ impl Config {
         }
         Some(last_value)
     }
+
+    /// A convenient wrapper around `lookup()` that unwraps the underlying primitive
+    /// type of a generic `Value`.
+    /// Returns `None` in the same way `lookup()` does; or if the underlying `Value`
+    /// type does not match with the requested type - in this case, `bool`.
+    #[unstable = "Library still under heavy development; design may change."]
+    pub fn lookup_boolean(&self, path: &str) -> Option<bool> {
+        self.lookup(path).and_then(|v|
+                                   match v {
+                                       &Value::Svalue(ScalarValue::Boolean(b)) => Some(b),
+                                       _ => None
+                                   })
+    }
+
+    /// A convenient wrapper around `lookup()` that unwraps the underlying primitive
+    /// type of a generic `Value`.
+    /// Returns `None` in the same way `lookup()` does; or if the underlying `Value`
+    /// type does not match with the requested type - in this case, `i32`.
+    #[unstable = "Library still under heavy development; design may change."]
+    pub fn lookup_integer32(&self, path: &str) -> Option<i32> {
+        self.lookup(path).and_then(|v|
+                                   match v {
+                                       &Value::Svalue(ScalarValue::Integer32(x)) => Some(x),
+                                       _ => None
+                                   })
+    }
+
+    /// A convenient wrapper around `lookup()` that unwraps the underlying primitive
+    /// type of a generic `Value`.
+    /// Returns `None` in the same way `lookup()` does; or if the underlying `Value`
+    /// type does not match with the requested type - in this case, `i64`.
+    #[unstable = "Library still under heavy development; design may change."]
+    pub fn lookup_integer64(&self, path: &str) -> Option<i64> {
+        self.lookup(path).and_then(|v|
+                                   match v {
+                                       &Value::Svalue(ScalarValue::Integer64(x)) => Some(x),
+                                       _ => None
+                                   })
+    }
+
+    /// A convenient wrapper around `lookup()` that unwraps the underlying primitive
+    /// type of a generic `Value`.
+    /// Returns `None` in the same way `lookup()` does; or if the underlying `Value`
+    /// type does not match with the requested type - in this case, `f32`.
+    #[unstable = "Library still under heavy development; design may change."]
+    pub fn lookup_floating32(&self, path: &str) -> Option<f32> {
+        self.lookup(path).and_then(|v|
+                                   match v {
+                                       &Value::Svalue(ScalarValue::Floating32(x)) => Some(x),
+                                       _ => None
+                                   })
+    }
+
+    /// A convenient wrapper around `lookup()` that unwraps the underlying primitive
+    /// type of a generic `Value`.
+    /// Returns `None` in the same way `lookup()` does; or if the underlying `Value`
+    /// type does not match with the requested type - in this case, `f64`.
+    #[unstable = "Library still under heavy development; design may change."]
+    pub fn lookup_floating64(&self, path: &str) -> Option<f64> {
+        self.lookup(path).and_then(|v|
+                                   match v {
+                                       &Value::Svalue(ScalarValue::Floating64(x)) => Some(x),
+                                       _ => None
+                                   })
+    }
+
+    /// A convenient wrapper around `lookup()` that unwraps the underlying primitive
+    /// type of a generic `Value`.
+    /// Returns `None` in the same way `lookup()` does; or if the underlying `Value`
+    /// type does not match with the requested type - in this case, `String`.
+    #[unstable = "Library still under heavy development; design may change."]
+    pub fn lookup_str(&self, path: &str) -> Option<&str> {
+        self.lookup(path).and_then(|v|
+                                   match v {
+                                       &Value::Svalue(ScalarValue::Str(ref s)) => Some(&s[..]),
+                                       _ => None
+                                   })
+    }
 }
 
 impl Setting {
