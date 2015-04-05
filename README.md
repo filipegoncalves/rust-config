@@ -21,8 +21,8 @@ as soon as the public API is designed and mostly implemented.
 - [ ] Consider splitting the parser into lexer + syntax analyser (much like we would in C with flex + byacc)
 
 ## Misc
-- [X] Refactor misc types (`Setting`, `SettingsList`, etc) into a separate, independent module.
-- [ ] Write tests that are expected to fail
+- [X] Refactor misc types (`Setting`, `SettingsList`, etc) into a separate, independent module
+- [ ] Write tests that are expected to fail (both for the parser and for `lookup()` variants)
 - [ ] Add missing documentation for undocumented code
 - [ ] Document `parser::ParseErr`
 - [ ] Write misc documentation with a high level description of the module and its features
@@ -30,3 +30,4 @@ as soon as the public API is designed and mostly implemented.
 - [ ] Document when, why and how `parse()` returns `Err`
 - [ ] `hex` and `hex64` literals support
 - [ ] Add option to indicate the conf. file encoding
+- [ ] Enforce the rules for arrays. Arrays are homogeneous and can only hold scalar values
