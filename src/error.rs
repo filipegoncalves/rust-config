@@ -1,5 +1,10 @@
 //! This module defines the errors that can occur while parsing a configuration
-//! Errors come in 3 flavors: TODO Write this
+//! As of now, errors come in 2 flavors: I/O errors, and parse errors.
+//! An I/O error occurs when the underlying stream yields an error. This can happen for example
+//! when attempting to open a file that does not exist, or has the wrong permissions. Another
+//! possibility is network problems on a `TcpStream`, if the configuration is being transferred
+//! and read over the network.
+//! Parse errors indicate a syntax error on the configuration format.
 
 use std::io::Error as IoError;
 use parser::ParseError;
