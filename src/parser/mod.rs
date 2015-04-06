@@ -582,6 +582,24 @@ mod test {
     }
 
     #[test]
+    fn simple_bad_array() {
+        let parsed = parse_conf("bad_array = [\"a bad array\", 12, 3.0e-1, true];\n");
+        assert!(parsed.is_err());
+    }
+
+    #[test]
+    fn bad_array() {
+        let parsed = parse_conf("bad_array = [\"a bad array\", (\"array\", 5, 4, 2)];\n");
+        assert!(parsed.is_err());
+    }
+
+    #[test]
+    fn bad_array_not_scalar() {
+        let parsed = parse_conf("bad_array = [(1, 2, 3), (4, 5, 6)];\n");
+        assert!(parsed.is_err());
+    }
+
+    #[test]
     fn empty_list() {
         let parsed = parse_conf("list=();final=\n(\t  \n) \n;");
         assert!(parsed.is_ok());
