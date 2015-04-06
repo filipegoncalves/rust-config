@@ -28,6 +28,6 @@ as soon as the public API is designed and mostly implemented.
 - [ ] Write misc documentation with a high level description of the module and its features
 - [ ] Write integration tests
 - [X] Document when, why and how `parse()` returns `Err`
-- [ ] `hex` and `hex64` literals support
+- [ ] `hex` and `hex64` literals support?
 - [ ] Add option to indicate the conf. file encoding
 - [ ] Enforce the rules for arrays. Arrays are homogeneous and can only hold scalar values

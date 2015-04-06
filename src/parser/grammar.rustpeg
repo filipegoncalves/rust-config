@@ -24,6 +24,7 @@ value -> Value
     / lv:list_value { Value::List(lv) }
     / gv:group_value { Value::Group(gv) }
 
+/* Make sure to update `array_elements` if this changes */
 scalar_value -> ScalarValue
     = v:boolean_scalar_value { v }
     / v:floating64_scalar_value { v }
@@ -32,16 +33,27 @@ scalar_value -> ScalarValue
     / v:integer32_scalar_value { v }
     / v:str_scalar_value { v }
 
+/* This rule enforces the requirement that arrays are homogeneous and
+ * only hold scalar values.
+ * Make sure to update `scalar_value` if this changes
+ */
+array_elements -> Vec<ScalarValue>
+    = "[" __ l:boolean_scalar_value ** (__ "," __) __ "]" { l }
+    / "[" __ l:floating64_scalar_value ** (__ "," __) __ "]" { l }
+    / "[" __ l:floating32_scalar_value ** (__ "," __) __ "]" { l }
+    / "[" __ l:integer64_scalar_value ** (__ "," __) __ "]" { l }
+    / "[" __ l:integer32_scalar_value ** (__ "," __) __ "]" { l }
+    / "[" __ l:str_scalar_value ** (__ "," __) __ "]" { l }
+
 array_value -> ArrayValue
-    = "[" __ l:scalar_value ** (__ "," __) __ "]"
-       {
-          let mut res = ArrayValue::new();
-          for scalar_val in l.into_iter() {
-              res.push(Value::Svalue(scalar_val));
-          }
-          res
-       }
-    / "[" __ "]" { ArrayValue::new() }
+    = l:array_elements
+      {
+         let mut res = ArrayValue::new();
+         for scalar_val in l.into_iter() {
+             res.push(Value::Svalue(scalar_val));
+         }
+         res
+      }
 
 list_value -> ListValue
     = "(" __ l:value ** (__ "," __) __ ")" { l }
