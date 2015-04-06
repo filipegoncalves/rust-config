@@ -200,6 +200,7 @@ mod test {
             "// That was the end of our example.\n",
             "// Attempting to start a block comment inside a line comment has no effect.\n",
             "// For example, this won't start a block comment: /* no, it doesn't work! /**/\n",
+            " # Single line comments can also start with `#` rather than `//`.\n",
             "\r\n\r\n\r\n\r\n                                 /// That's it for now. Bye!\n\n\n"));
 
         assert!(conf.is_ok());
@@ -796,6 +797,7 @@ mod test {
             "  }; //This was for the window. Now the rest.\n",
             "  a = 5;\n",
             "  ff = 1.E6;\n",
+            "  # This is going to be called `group1`\n",
             "  group1:\n",
             "  {\n",
             "    x = 5;  y = 10;\n",
