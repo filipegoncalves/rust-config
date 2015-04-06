@@ -144,6 +144,7 @@
 //! # my_settings_list.insert(setting_name, my_setting);
 //! let my_config = Config::new(my_settings_list);
 //! ```
+//!
 
 
 pub use parser::grammar::ParseError;
@@ -153,6 +154,7 @@ use types::Config;
 peg_file! grammar("grammar.rustpeg");
 
 /// Parses a configuration file from a `&str`.
+/// A `ParseError` is returned in case of syntax error.
 pub fn parse(config: &str) -> Result<Config, ParseError> {
     conf(config).and_then(|sl| Ok(Config::new(sl)))
 }

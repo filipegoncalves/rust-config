@@ -19,7 +19,7 @@ use error::{from_io_err, from_parse_err};
 /// * A syntax error
 /// If a syntax error is reported, it means that the stream successfully delivered every piece of
 /// data, since parsing doesn't start until the whole input is read to memory.
-/// ### Examples
+/// # Examples
 /// For educational / demonstration purposes, we can wrap a string inside a `Cursor` and parse it as
 /// a configuration:
 ///
@@ -90,7 +90,7 @@ pub fn from_stream<T: Read>(stream: &mut T) -> Result<Config, ConfigError> {
 ///
 /// Errors upon opening the file can happen due to the file not existing, or bad permissions, etc.
 ///
-/// ### Examples
+/// # Examples
 /// This reads and parses a configuration stored in `examples/sample.conf`:
 ///
 /// ```
@@ -112,7 +112,7 @@ pub fn from_file(path: &Path) -> Result<Config, ConfigError> {
 
 /// Reads a configuration from a string slice.
 /// The only possible error that can occur is a syntax error.
-/// ### Examples
+/// # Examples
 ///
 /// ```
 /// use config::reader::from_str;
