@@ -231,6 +231,54 @@ impl Config {
                                        _ => None
                                    })
     }
+
+    /// A convenient wrapper around `lookup_boolean()` that unwraps the underlying primitive
+    /// type of a boolean `Value`. If either of `lookup_boolean()` or `lookup` return `None`,
+    /// then the user-provided default value is returned.
+    #[unstable = "Library still under heavy development; design may change."]
+    pub fn lookup_boolean_or(&self, path: &str, default: bool) -> bool {
+        self.lookup_boolean(path).unwrap_or(default)
+    }
+
+    /// A convenient wrapper around `lookup_integer32()` that unwraps the underlying primitive
+    /// type of an integer32 `Value`. If either of `lookup_integer32()` or `lookup` return `None`,
+    /// then the user-provided default value is returned.
+    #[unstable = "Library still under heavy development; design may change."]
+    pub fn lookup_integer32_or(&self, path: &str, default: i32) -> i32 {
+        self.lookup_integer32(path).unwrap_or(default)
+    }
+
+    /// A convenient wrapper around `lookup_integer64()` that unwraps the underlying primitive
+    /// type of an integer64 `Value`. If either of `lookup_integer64()` or `lookup` return `None`,
+    /// then the user-provided default value is returned.
+    #[unstable = "Library still under heavy development; design may change."]
+    pub fn lookup_integer64_or(&self, path: &str, default: i64) -> i64 {
+        self.lookup_integer64(path).unwrap_or(default)
+    }
+
+    /// A convenient wrapper around `lookup_floating32()` that unwraps the underlying primitive
+    /// type of an floating32 `Value`. If either of `lookup_floating32()` or `lookup` return `None`,
+    /// then the user-provided default value is returned.
+    #[unstable = "Library still under heavy development; design may change."]
+    pub fn lookup_floating32_or(&self, path: &str, default: f32) -> f32 {
+        self.lookup_floating32(path).unwrap_or(default)
+    }
+
+    /// A convenient wrapper around `lookup_floating64()` that unwraps the underlying primitive
+    /// type of an floating64 `Value`. If either of `lookup_floating64()` or `lookup` return `None`,
+    /// then the user-provided default value is returned.
+    #[unstable = "Library still under heavy development; design may change."]
+    pub fn lookup_floating64_or(&self, path: &str, default: f64) -> f64 {
+        self.lookup_floating64(path).unwrap_or(default)
+    }
+
+    /// A convenient wrapper around `lookup_str()` that unwraps the underlying primitive
+    /// type of a string `Value`. If either of `lookup_str()` or `lookup` return `None`,
+    /// then the user-provided default value is returned.
+    #[unstable = "Library still under heavy development; design may change."]
+    pub fn lookup_str_or<'a>(&'a self, path: &str, default: &'a str) -> &'a str {
+        self.lookup_str(path).unwrap_or(default)
+    }
 }
 
 impl Setting {
