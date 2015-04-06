@@ -186,6 +186,27 @@ mod test {
     }
 
     #[test]
+    fn only_comments() {
+        let conf = parse_conf(concat!(
+            "// This conf consists of comments and nothing else.\n",
+            "// Well, I mean, comments and newlines, that is.\n",
+            "\n\n\n\n\n",
+            "/* This is a block comment.\n",
+            " * It spans multiple lines.\n",
+            " * It can be closed with `*` followed by `/`\n",
+            " * Block comments do not nest. That is, /* does not\n",
+            " * open another comment block.\n",
+            " */ \n",
+            "// That was the end of our example.\n",
+            "// Attempting to start a block comment inside a line comment has no effect.\n",
+            "// For example, this won't start a block comment: /* no, it doesn't work! /**/\n",
+            "\r\n\r\n\r\n\r\n                                 /// That's it for now. Bye!\n\n\n"));
+
+        assert!(conf.is_ok());
+        assert!(conf.unwrap().len() == 0);
+    }
+
+    #[test]
     fn boolean_scalar_value() {
         let parsed = parse_conf("windows=NO;\nlinux = true;\nUNIX\t=\nFaLsE;\n");
         assert!(parsed.is_ok());
@@ -702,6 +723,85 @@ mod test {
             "    my_array = [ 10, 11, 12 ];\n",
             "    flag = TRUE;\n",
             "    states = [\"CT\", \"CA\", \"TX\", \"NV\", \"FL\"];",
+            "  };\n",
+            "};\n"));
+
+        assert!(parsed.is_ok());
+
+        let mut size_group = SettingsList::new();
+        size_group.insert("w".to_string(),
+                          Setting::new("w".to_string(),
+                                       Value::Svalue(ScalarValue::Integer32(640))));
+        size_group.insert("h".to_string(),
+                          Setting::new("h".to_string(),
+                                       Value::Svalue(ScalarValue::Integer32(480))));
+
+        let mut window_group = SettingsList::new();
+        window_group.insert("title".to_string(),
+                            Setting::new("title".to_string(),
+                                         Value::Svalue(ScalarValue::Str("My Application"
+                                                                        .to_string()))));
+        window_group.insert("size".to_string(),
+                            Setting::new("size".to_string(), Value::Group(size_group)));
+
+        let mut group1 = SettingsList::new();
+        group1.insert("x".to_string(),
+                      Setting::new("x".to_string(), Value::Svalue(ScalarValue::Integer32(5))));
+        group1.insert("y".to_string(),
+                      Setting::new("y".to_string(), Value::Svalue(ScalarValue::Integer32(10))));
+        group1.insert("my_array".to_string(),
+                      Setting::new("my_array".to_string(),
+                                   Value::Array(vec![
+                                       Value::Svalue(ScalarValue::Integer32(10)),
+                                       Value::Svalue(ScalarValue::Integer32(11)),
+                                       Value::Svalue(ScalarValue::Integer32(12))])));
+        group1.insert("flag".to_string(),
+                      Setting::new("flag".to_string(), Value::Svalue(ScalarValue::Boolean(true))));
+        group1.insert("states".to_string(),
+                      Setting::new("states".to_string(),
+                                   Value::Array(vec![
+                                       Value::Svalue(ScalarValue::Str("CT".to_string())),
+                                       Value::Svalue(ScalarValue::Str("CA".to_string())),
+                                       Value::Svalue(ScalarValue::Str("TX".to_string())),
+                                       Value::Svalue(ScalarValue::Str("NV".to_string())),
+                                       Value::Svalue(ScalarValue::Str("FL".to_string()))])));
+
+        let mut app_group = SettingsList::new();
+        app_group.insert("window".to_string(),
+                         Setting::new("window".to_string(), Value::Group(window_group)));
+        app_group.insert("a".to_string(),
+                         Setting::new("a".to_string(), Value::Svalue(ScalarValue::Integer32(5))));
+        app_group.insert("ff".to_string(),
+                         Setting::new("ff".to_string(),
+                                      Value::Svalue(ScalarValue::Floating32(1e6))));
+        app_group.insert("group1".to_string(),
+                         Setting::new("group1".to_string(), Value::Group(group1)));
+
+        let mut expected = SettingsList::new();
+        expected.insert("application".to_string(),
+                        Setting::new("application".to_string(), Value::Group(app_group)));
+
+        assert_eq!(parsed.unwrap(), expected);
+    }
+
+    #[test]
+    fn sample_conf_comments() {
+        let parsed = parse_conf(concat!(
+            "\n\napplication:\n",
+            "{//This is a comment. It spans until the end of the line\n",
+            "  window:\n",
+            "  {\n",
+            "    title =/*the app title \r\n\r\n\r\n*/\"My Application\"//Another comment;\n;\n",
+            "    size = { w = 640; h// = 480; };\n = 480; };\n",
+            "  }; //This was for the window. Now the rest.\n",
+            "  a = 5;\n",
+            "  ff = 1.E6;\n",
+            "  group1:\n",
+            "  {\n",
+            "    x = 5;  y = 10;\n",
+            "    my_array = [ /*comments*/10, /*everywhere*/11, 12 ];\n",
+            "    flag = TRUE;\n",
+            "    //DING DONG!\nstates = [\"CT\", \"CA\", \"TX\", \"NV\", \"FL\"];",
             "  };\n",
             "};\n"));
 
