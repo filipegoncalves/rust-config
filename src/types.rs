@@ -648,4 +648,45 @@ mod test {
         assert!(lookup_empty_lst.is_some());
         assert_eq!(lookup_empty_lst.unwrap(), &Value::List(Vec::new()));
     }
+
+    #[test]
+    fn lookup_invalid_path() {
+        let mut my_settings = SettingsList::new();
+        my_settings.insert("my_array".to_string(),
+                           Setting::new("my_array".to_string(),
+                                        Value::Array(vec![
+                                            Value::Svalue(ScalarValue::Boolean(true)),
+                                            Value::Svalue(ScalarValue::Boolean(false)),
+                                            Value::Svalue(ScalarValue::Boolean(true))])));
+
+        let my_conf = Config::new(my_settings);
+
+        let value0 = my_conf.lookup("my_array.[1456]");
+        assert!(value0.is_none());
+
+        let value1 = my_conf.lookup("my_array.[-30]");
+        assert!(value1.is_none());
+
+        let value2 = my_conf.lookup("something_that_does_not_exist.[14].lala.lele.[24]");
+        assert!(value2.is_none());
+    }
+
+    #[test]
+    fn lookup_invalid_type() {
+        let mut my_settings = SettingsList::new();
+        my_settings.insert("my_array".to_string(),
+                           Setting::new("my_array".to_string(),
+                                        Value::Array(vec![
+                                            Value::Svalue(ScalarValue::Boolean(true)),
+                                            Value::Svalue(ScalarValue::Boolean(false)),
+                                            Value::Svalue(ScalarValue::Boolean(true))])));
+
+        let my_conf = Config::new(my_settings);
+
+        let value0 = my_conf.lookup_integer32("my_array.[0]");
+        assert!(value0.is_none());
+
+        let value1 = my_conf.lookup_str("my_array.[1]");
+        assert!(value1.is_none());
+    }
 }
