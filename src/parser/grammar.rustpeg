@@ -3,7 +3,7 @@ use syntax::parse;
 
 #[pub]
 conf -> SettingsList
-    = l:settings_list { l }
+    = __ l:settings_list { l }
 
 settings_list -> SettingsList
     = l:setting*

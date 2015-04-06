@@ -171,8 +171,6 @@ mod test {
         assert_eq!(parsed.unwrap().len(), 0);
     }
 
-    // TODO Fix this test
-    /*
     #[test]
     fn blank_conf() {
         let confs = vec![
@@ -186,7 +184,7 @@ mod test {
             assert!(pconf.unwrap().len() == 0);
         }
     }
-     */
+
     #[test]
     fn boolean_scalar_value() {
         let parsed = parse_conf("windows=NO;\nlinux = true;\nUNIX\t=\nFaLsE;\n");
