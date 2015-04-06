@@ -16,7 +16,7 @@ settings_list -> SettingsList
       }
 
 setting -> Setting
-    = blanks* n:name blanks* (":" / "=") blanks* v:value blanks* ";" blanks* { Setting::new(n, v) }
+    = __ n:name __ (":" / "=") __ v:value __ ";" __ { Setting::new(n, v) }
 
 value -> Value
     = sv:scalar_value { Value::Svalue(sv) }
@@ -33,7 +33,7 @@ scalar_value -> ScalarValue
     / v:str_scalar_value { v }
 
 array_value -> ArrayValue
-    = "[" blanks* l:scalar_value ** (blanks* "," blanks*) blanks* "]"
+    = "[" __ l:scalar_value ** (__ "," __) __ "]"
        {
           let mut res = ArrayValue::new();
           for scalar_val in l.into_iter() {
@@ -41,10 +41,10 @@ array_value -> ArrayValue
           }
           res
        }
-    / "[" blanks* "]" { ArrayValue::new() }
+    / "[" __ "]" { ArrayValue::new() }
 
 list_value -> ListValue
-    = "(" blanks* l:value ** (blanks* "," blanks*) blanks* ")" { l }
+    = "(" __ l:value ** (__ "," __) __ ")" { l }
 
 group_value -> SettingsList
     = "{" sl:settings_list "}" { sl }
@@ -75,5 +75,35 @@ floating64_scalar_value -> ScalarValue
 str_scalar_value -> ScalarValue
     = "\"" ([^\"\\]/"\\".)* "\"" { ScalarValue::Str(parse::str_lit(&match_str[1..match_str.len()-1])) }
 
-blanks = [ \t\r\n]
-empty = blanks*
+
+/* The following rules were copied
+ * from rust-peg source, see https://github.com/kevinmehall/rust-peg/blob/master/src/grammar.rustpeg
+ */
+
+__ = (whitespace / eol / comment)*
+
+/* Modeled after ECMA-262, 5th ed., 7.4. */
+comment
+  = singleLineComment
+  / multiLineComment
+
+singleLineComment
+  = "//" (!eolChar .)*
+
+multiLineComment
+  = "/*" (!"*/" .)* "*/"
+
+/* Modeled after ECMA-262, 5th ed., 7.3. */
+eol
+  = "\n"
+  / "\r\n"
+  / "\r"
+  / "\u{2028}"
+  / "\u{2029}"
+
+eolChar
+  = [\n\r\u2028\u2029]
+
+/* Modeled after ECMA-262, 5th ed., 7.2. */
+whitespace
+  = [ \t\u{00A0}\u{FEFF}\u{1680}\u{180E}\u{2000}-\u{200A}\u{202F}\u{205F}\u{3000}] // \v\f removed
