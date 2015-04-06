@@ -349,7 +349,7 @@ mod test {
     use types::{Value, ScalarValue, SettingsList, Setting};
 
     #[test]
-    fn simple_bool_lookup() {
+    fn simple_lookup_generic_bool() {
 
         let mut my_settings = SettingsList::new();
         my_settings.insert("windows".to_string(),
@@ -375,10 +375,39 @@ mod test {
         let unix_lookup = my_conf.lookup("UNIX");
         assert!(unix_lookup.is_some());
         assert_eq!(unix_lookup.unwrap(), &Value::Svalue(ScalarValue::Boolean(false)));
+
     }
 
     #[test]
-    fn simple_integer_lookup() {
+    fn simple_lookup_bool() {
+        let mut my_settings = SettingsList::new();
+        my_settings.insert("windows".to_string(),
+                           Setting::new("windows".to_string(),
+                                        Value::Svalue(ScalarValue::Boolean(false))));
+        my_settings.insert("linux".to_string(),
+                           Setting::new("linux".to_string(),
+                                        Value::Svalue(ScalarValue::Boolean(true))));
+        my_settings.insert("UNIX".to_string(),
+                           Setting::new("UNIX".to_string(),
+                                        Value::Svalue(ScalarValue::Boolean(false))));
+
+        let my_conf = Config::new(my_settings);
+
+        let windows_lookup = my_conf.lookup_boolean("windows");
+        assert!(windows_lookup.is_some());
+        assert_eq!(windows_lookup.unwrap(), false);
+
+        let linux_lookup = my_conf.lookup_boolean("linux");
+        assert!(linux_lookup.is_some());
+        assert_eq!(linux_lookup.unwrap(), true);
+
+        let unix_lookup = my_conf.lookup_boolean("UNIX");
+        assert!(unix_lookup.is_some());
+        assert_eq!(unix_lookup.unwrap(), false);
+    }
+
+    #[test]
+    fn simple_lookup_generic_integer32() {
 
         let mut my_settings = SettingsList::new();
         my_settings.insert("miles".to_string(),
@@ -397,6 +426,48 @@ mod test {
         let mpg_lookup = my_conf.lookup("mpg");
         assert!(mpg_lookup.is_some());
         assert_eq!(mpg_lookup.unwrap(), &Value::Svalue(ScalarValue::Integer32(27)));
+    }
+
+    #[test]
+    fn simple_lookup_integer32() {
+
+        let mut my_settings = SettingsList::new();
+        my_settings.insert("miles".to_string(),
+                           Setting::new("miles".to_string(),
+                                        Value::Svalue(ScalarValue::Integer32(3))));
+        my_settings.insert("mpg".to_string(),
+                           Setting::new("mpg".to_string(),
+                                        Value::Svalue(ScalarValue::Integer32(27))));
+
+        let my_conf = Config::new(my_settings);
+
+        let miles_lookup = my_conf.lookup_integer32("miles");
+        assert!(miles_lookup.is_some());
+        assert_eq!(miles_lookup.unwrap(), 3);
+
+        let mpg_lookup = my_conf.lookup_integer32("mpg");
+        assert!(mpg_lookup.is_some());
+        assert_eq!(mpg_lookup.unwrap(), 27);
+    }
+
+    #[test]
+    fn simple_lookup_default() {
+
+        let mut my_settings = SettingsList::new();
+        my_settings.insert("miles".to_string(),
+                           Setting::new("miles".to_string(),
+                                        Value::Svalue(ScalarValue::Integer32(3))));
+        my_settings.insert("mpg".to_string(),
+                           Setting::new("mpg".to_string(),
+                                        Value::Svalue(ScalarValue::Integer32(27))));
+
+        let my_conf = Config::new(my_settings);
+
+        let miles = my_conf.lookup_integer32_or("miles", 4);
+        assert_eq!(miles, 3);
+
+        let invalid_lookup = my_conf.lookup_integer32_or("blablabla", 22);
+        assert_eq!(invalid_lookup, 22);
     }
 
     #[test]
@@ -445,7 +516,6 @@ mod test {
         assert_eq!(big_int.unwrap(), &Value::Svalue(ScalarValue::Integer64(9000000000000000000i64)));
 
     }
-
 
     #[test]
     fn lookup_array() {
