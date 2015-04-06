@@ -22,7 +22,7 @@ as soon as the public API is designed and mostly implemented.
 
 ## Misc
 - [X] Refactor misc types (`Setting`, `SettingsList`, etc) into a separate, independent module
-- [ ] Write tests that are expected to fail (both for the parser and for `lookup()` variants)
+- [X] Write tests that are expected to fail
 - [X] Add missing documentation for undocumented code
 - [X] Document `parser::ParseErr`
 - [ ] Write misc documentation with a high level description of the module and its features
