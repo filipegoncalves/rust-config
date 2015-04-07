@@ -30,4 +30,4 @@ as soon as the public API is designed and mostly implemented.
 - [X] Document when, why and how `parse()` returns `Err`
 - [ ] `hex` and `hex64` literals support?
 - [ ] Add option to indicate the conf. file encoding
-- [ ] Enforce the rules for arrays. Arrays are homogeneous and can only hold scalar values
+- [X] Enforce the rules for arrays. Arrays are homogeneous and can only hold scalar values
