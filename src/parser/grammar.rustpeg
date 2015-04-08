@@ -85,8 +85,10 @@ floating64_scalar_value -> ScalarValue
     / ([+-]([0-9]+)("."[0-9]*)?[eE][+-]?[0-9]+)"L" { ScalarValue::Floating64((&match_str[..match_str.len()-1]).parse::<f64>().unwrap()) }
 
 str_scalar_value -> ScalarValue
-    = "\"" ([^\"\\]/"\\".)* "\"" { ScalarValue::Str(parse::str_lit(&match_str[1..match_str.len()-1])) }
+    = s:str_literal ++ __ { ScalarValue::Str(s.into_iter().fold(String::new(), |mut acc, item| { acc.push_str(&item[..]); acc })) }
 
+str_literal -> String
+    = "\"" ([^\"\\]/"\\".)* "\"" { parse::str_lit(&match_str[1..match_str.len()-1]) }
 
 /* The following rules were copied
  * from rust-peg source, see https://github.com/kevinmehall/rust-peg/blob/master/src/grammar.rustpeg
