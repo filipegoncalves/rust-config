@@ -12,7 +12,7 @@ as soon as the public API is designed and mostly implemented.
 ## Features
 - [X] Allow single and multi-line comments in configurations
 - [ ] Add `#include` support to include other configuration files. Not trivial because of the way the parser works
-- [ ] Automatically concatenate blank-separated string literals in the configuration. Useful for settings with big strings
+- [X] Automatically concatenate blank-separated string literals in the configuration. Useful for settings with big strings
 - [ ] Export a public API to manipulate a configuration in runtime and possibly write it to a file
 
 ## Parser
