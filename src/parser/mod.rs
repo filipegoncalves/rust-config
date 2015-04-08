@@ -426,6 +426,35 @@ mod test {
     }
 
     #[test]
+    fn multiline_str_scalar_value() {
+        let parsed = parse_conf(
+            concat!("\n\n\nserver_name\t= \"testing.org\"\r\n\r\n;\r\n\r\n",
+                    "big_str = \"This is a very big string. It will span multiple lines.\"\n",
+                    "          \" This line is still part of our very big string.\"\n",
+                    "          \" We could do this all day\" \". Notice we can also use a single\"",
+                    "          \" space to separate string literals components,\"\t\"",
+                    " or even tabs!\"; another_str = \"bye\";"));
+
+        assert!(parsed.is_ok());
+
+        let big_str = concat!("This is a very big string. It will span multiple lines.",
+                              " This line is still part of our very big string.",
+                              " We could do this all day. Notice we can also use a single",
+                              " space to separate string literals components, or even tabs!");
+
+        let mut expected = SettingsList::new();
+        expected.insert("server_name".to_string(),
+                        Setting::new("server_name".to_string(),
+                                     Value::Svalue(ScalarValue::Str("testing.org".to_string()))));
+        expected.insert("big_str".to_string(),
+                        Setting::new("big_str".to_string(),
+                                     Value::Svalue(ScalarValue::Str(big_str.to_string()))));
+        expected.insert("another_str".to_string(),
+                        Setting::new("another_str".to_string(),
+                                     Value::Svalue(ScalarValue::Str("bye".to_string()))));
+    }
+
+    #[test]
     fn empty_array() {
         let parsed = parse_conf("array_one = [\n\n\n\n\n];\r\narray_two=[];");
 
@@ -879,6 +908,285 @@ mod test {
         let mut expected = SettingsList::new();
         expected.insert("application".to_string(),
                         Setting::new("application".to_string(), Value::Group(app_group)));
+
+        assert_eq!(parsed.unwrap(), expected);
+    }
+
+    #[test]
+    fn sample_conf_all_features() {
+        let my_conf = concat!(
+            "#----------------------------\n",
+            "# Example Configuration File\n",
+            "#---------------------------\n",
+            "#\n",
+            "\n",
+            "application:\n",
+            "{\n",
+            "\n",
+            " /* This section defines some settings for our\n",
+            "  * main application window, such as size and\n",
+            "  * position.\n",
+            "  */\n",
+            "\n",
+            "  window:\n",
+            "  {\n",
+            "    title = \"My Application\";\n",
+            "    size = { /* width */ w = 640; /* height */ h = 480; };\n",
+            "    pos = { x = 350; y = 250; };\n",
+            "  };\n",
+            "\n",
+            "  a = 5;\n",
+            "  b = 6;\n",
+            "  ff = 1.0E6;\n",
+            "  test-comment = \"/* hello\\n \\\"there\\\"*/\";\n",
+            "\n",
+            "  test-long-string = \"A very long string that spans multiple lines. \"\n",
+            "  /* but wait, there's more... */ \"Adjacent strings are automatically\"\n",
+            "  \" concatenated.\";\n",
+            "\n",
+            "  test-escaped-string = \"\\\"This is\\n a test.\\\"\";\n",
+            "\n",
+            "  group1:\n",
+            "  {\n",
+            "    x = 5;  y = 10;\n",
+            "    my_array = [ 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 ];\n",
+            "    flag = TRUE;\n",
+            "\n",
+            "    group2: { zzz = \"this is a test\"; };\n",
+            "\n",
+            "    states = [	\"CT\", // Connecticut\n",
+            "		\"CA\", // California\n",
+            "		\"TX\", // Texas\n",
+            "		\"NV\", // Nevada\n",
+            "		\"FL\"  // Florida\n",
+            "    ];\n",
+            "  };\n",
+            "\n",
+            "};\n",
+            "\n",
+            "// Commented for now\n",
+            "//binary = [ 0xAA, 0xBB, 0xCC ];\n",
+            "\n",
+            "list = ( ( \"abc\", 123, true ), 1.234, ( /* an empty list */ ) ,[ 1, 2, 3 ],\n",
+            "	   { a = (1, 2, true); } );\n",
+            "\n",
+            "books = ( \"inventory\",\n",
+            "          { title  = \"Treasure Island\";\n",
+            "            author = \"Robert Louis Stevenson\";\n",
+            "            price  = 29.99;\n",
+            "            qty    = 5; },\n",
+            "          { title  = \"Snow Crash\";\n",
+            "            author = \"Neal Stephenson\";\n",
+            "            price  = 9.99;\n",
+            "            qty    = 8; });\n",
+            "\n",
+            "# miscellaneous stuff\n",
+            "\n",
+            "misc:\n",
+            "{\n",
+            "  port = 5000;\n",
+            "  minutes = 3.0e0;\n",
+            "  enabled = FALSE;\n",
+            "  // Commented for now",
+            "  // mask = 0xAABBCCDD;\n",
+            "  unicode = \"STARGÎ›ÌŠTE SG-1\"; // UTF-8 string\n",
+            "  bigint = 9223372036854775807L;\n",
+            "  // Commented for now\n",
+            "  // bighex = 0x1122334455667788L;\n",
+            "};\n",
+            "\n",
+            "\n",
+            "### eof");
+
+
+        let parsed = parse_conf(my_conf);
+        assert!(parsed.is_ok());
+
+        let mut size_group = SettingsList::new();
+        size_group.insert("w".to_string(),
+                          Setting::new("w".to_string(),
+                                       Value::Svalue(ScalarValue::Integer32(640))));
+        size_group.insert("h".to_string(),
+                          Setting::new("h".to_string(),
+                                       Value::Svalue(ScalarValue::Integer32(480))));
+
+        let mut pos_group = SettingsList::new();
+        pos_group.insert("x".to_string(),
+                         Setting::new("x".to_string(),
+                                      Value::Svalue(ScalarValue::Integer32(350))));
+        pos_group.insert("y".to_string(),
+                         Setting::new("y".to_string(),
+                                      Value::Svalue(ScalarValue::Integer32(250))));
+
+        let mut window_group = SettingsList::new();
+        window_group.insert("title".to_string(),
+                            Setting::new("title".to_string(),
+                                         Value::Svalue(ScalarValue::Str("My Application"
+                                                                        .to_string()))));
+        window_group.insert("size".to_string(),
+                            Setting::new("size".to_string(), Value::Group(size_group)));
+        window_group.insert("pos".to_string(),
+                            Setting::new("pos".to_string(), Value::Group(pos_group)));
+
+        let mut group2 = SettingsList::new();
+        group2.insert("zzz".to_string(),
+                      Setting::new("zzz".to_string(),
+                                   Value::Svalue(ScalarValue::Str("this is a test".to_string()))));
+
+        let mut group1 = SettingsList::new();
+        group1.insert("x".to_string(),
+                      Setting::new("x".to_string(), Value::Svalue(ScalarValue::Integer32(5))));
+        group1.insert("y".to_string(),
+                      Setting::new("y".to_string(), Value::Svalue(ScalarValue::Integer32(10))));
+        group1.insert("my_array".to_string(),
+                      Setting::new("my_array".to_string(),
+                                   Value::Array(vec![
+                                       Value::Svalue(ScalarValue::Integer32(10)),
+                                       Value::Svalue(ScalarValue::Integer32(11)),
+                                       Value::Svalue(ScalarValue::Integer32(12)),
+                                       Value::Svalue(ScalarValue::Integer32(13)),
+                                       Value::Svalue(ScalarValue::Integer32(14)),
+                                       Value::Svalue(ScalarValue::Integer32(15)),
+                                       Value::Svalue(ScalarValue::Integer32(16)),
+                                       Value::Svalue(ScalarValue::Integer32(17)),
+                                       Value::Svalue(ScalarValue::Integer32(18)),
+                                       Value::Svalue(ScalarValue::Integer32(19)),
+                                       Value::Svalue(ScalarValue::Integer32(20)),
+                                       Value::Svalue(ScalarValue::Integer32(21)),
+                                       Value::Svalue(ScalarValue::Integer32(22))])));
+        group1.insert("flag".to_string(),
+                      Setting::new("flag".to_string(), Value::Svalue(ScalarValue::Boolean(true))));
+        group1.insert("group2".to_string(),
+                      Setting::new("group2".to_string(), Value::Group(group2)));
+        group1.insert("states".to_string(),
+                      Setting::new("states".to_string(),
+                                   Value::Array(vec![
+                                       Value::Svalue(ScalarValue::Str("CT".to_string())),
+                                       Value::Svalue(ScalarValue::Str("CA".to_string())),
+                                       Value::Svalue(ScalarValue::Str("TX".to_string())),
+                                       Value::Svalue(ScalarValue::Str("NV".to_string())),
+                                       Value::Svalue(ScalarValue::Str("FL".to_string()))])));
+
+        let mut app_group = SettingsList::new();
+        app_group.insert("window".to_string(),
+                         Setting::new("window".to_string(), Value::Group(window_group)));
+        app_group.insert("a".to_string(),
+                         Setting::new("a".to_string(), Value::Svalue(ScalarValue::Integer32(5))));
+        app_group.insert("b".to_string(),
+                         Setting::new("b".to_string(), Value::Svalue(ScalarValue::Integer32(6))));
+        app_group.insert("ff".to_string(),
+                         Setting::new("ff".to_string(),
+                                      Value::Svalue(ScalarValue::Floating32(1e6))));
+        app_group.insert("test-comment".to_string(),
+                         Setting::new("test-comment".to_string(),
+                                      Value::Svalue(ScalarValue::Str("/* hello\n \"there\"*/"
+                                                                     .to_string()))));
+        app_group.insert("test-long-string".to_string(),
+                         Setting::new("test-long-string".to_string(),
+                                      Value::Svalue(ScalarValue::Str(
+                                          concat!("A very long string that spans multiple lines. ",
+                                                  "Adjacent strings are automatically",
+                                                  " concatenated.").to_string()))));
+        app_group.insert("test-escaped-string".to_string(),
+                         Setting::new("test-escaped-string".to_string(),
+                                      Value::Svalue(ScalarValue::Str("\"This is\n a test.\""
+                                                                     .to_string()))));
+        app_group.insert("group1".to_string(),
+                         Setting::new("group1".to_string(), Value::Group(group1)));
+
+        let mut expected = SettingsList::new();
+        expected.insert("application".to_string(),
+                        Setting::new("application".to_string(), Value::Group(app_group)));
+
+        let mut group_a = SettingsList::new();
+        group_a.insert("a".to_string(),
+                       Setting::new("a".to_string(),
+                                    Value::List(vec![
+                                        Value::Svalue(ScalarValue::Integer32(1)),
+                                        Value::Svalue(ScalarValue::Integer32(2)),
+                                        Value::Svalue(ScalarValue::Boolean(true))])));
+
+        let list_elements = vec![
+            Value::List(vec![
+                Value::Svalue(ScalarValue::Str("abc".to_string())),
+                Value::Svalue(ScalarValue::Integer32(123)),
+                Value::Svalue(ScalarValue::Boolean(true))]),
+            Value::Svalue(ScalarValue::Floating32(1.234)),
+            Value::List(Vec::new()),
+            Value::Array(vec![
+                Value::Svalue(ScalarValue::Integer32(1)),
+                Value::Svalue(ScalarValue::Integer32(2)),
+                Value::Svalue(ScalarValue::Integer32(3))]),
+            Value::Group(group_a)];
+
+        expected.insert("list".to_string(),
+                        Setting::new("list".to_string(),
+                                     Value::List(list_elements)));
+
+        let mut inventory_group_1 = SettingsList::new();
+        inventory_group_1.insert("title".to_string(),
+                                 Setting::new("title".to_string(),
+                                              Value::Svalue(ScalarValue::Str(
+                                                  "Treasure Island".to_string()))));
+        inventory_group_1.insert("author".to_string(),
+                                 Setting::new("author".to_string(),
+                                              Value::Svalue(ScalarValue::Str(
+                                                  "Robert Louis Stevenson".to_string()))));
+        inventory_group_1.insert("price".to_string(),
+                                 Setting::new("price".to_string(),
+                                              Value::Svalue(ScalarValue::Floating32(29.99))));
+        inventory_group_1.insert("qty".to_string(),
+                                 Setting::new("qty".to_string(),
+                                              Value::Svalue(ScalarValue::Integer32(5))));
+
+        let mut inventory_group_2 = SettingsList::new();
+        inventory_group_2.insert("title".to_string(),
+                                 Setting::new("title".to_string(),
+                                              Value::Svalue(ScalarValue::Str(
+                                                  "Snow Crash".to_string()))));
+        inventory_group_2.insert("author".to_string(),
+                                 Setting::new("author".to_string(),
+                                              Value::Svalue(ScalarValue::Str(
+                                                  "Neal Stephenson".to_string()))));
+        inventory_group_2.insert("price".to_string(),
+                                 Setting::new("price".to_string(),
+                                              Value::Svalue(ScalarValue::Floating32(9.99))));
+        inventory_group_2.insert("qty".to_string(),
+                                 Setting::new("qty".to_string(),
+                                              Value::Svalue(ScalarValue::Integer32(8))));
+
+
+        let books_list_elements = vec![
+            Value::Svalue(ScalarValue::Str("inventory".to_string())),
+            Value::Group(inventory_group_1),
+            Value::Group(inventory_group_2)];
+
+        expected.insert("books".to_string(),
+                        Setting::new("books".to_string(),
+                                     Value::List(books_list_elements)));
+
+        let mut misc_group = SettingsList::new();
+        misc_group.insert("port".to_string(),
+                          Setting::new("port".to_string(),
+                                       Value::Svalue(ScalarValue::Integer32(5000))));
+        misc_group.insert("minutes".to_string(),
+                          Setting::new("minutes".to_string(),
+                                       Value::Svalue(ScalarValue::Floating32(3.0))));
+        misc_group.insert("enabled".to_string(),
+                          Setting::new("enabled".to_string(),
+                                       Value::Svalue(ScalarValue::Boolean(false))));
+        misc_group.insert("unicode".to_string(),
+                          Setting::new("unicode".to_string(),
+                                       Value::Svalue(ScalarValue::Str(
+                                           "STARGÎ›ÌŠTE SG-1".to_string()))));
+        misc_group.insert("bigint".to_string(),
+                          Setting::new("bigint".to_string(),
+                                       Value::Svalue(ScalarValue::Integer64(
+                                           9223372036854775807i64))));
+
+        expected.insert("misc".to_string(),
+                        Setting::new("misc".to_string(),
+                                     Value::Group(misc_group)));
 
         assert_eq!(parsed.unwrap(), expected);
     }
