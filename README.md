@@ -1,7 +1,8 @@
 # config [![Build Status](https://travis-ci.org/filipegoncalves/rust-config.svg?branch=master)](https://travis-ci.org/filipegoncalves/rust-config)
 
 # NOTE
-Currently not building because `rust-peg` uses features that are not available in the beta channel. I am looking into several options, including switching to [nom](https://github.com/Geal/nom).
+Currently not building with 1.0.0-beta because `rust-peg` uses features that are not available in the beta channel. I am looking into several options, including switching to [nom](https://github.com/Geal/nom).
+In the meantime, just stick to rust nightly and you should be good.
 
 A soon-to-be Rust library to read and parse configuration files.
 
