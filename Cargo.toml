@@ -6,6 +6,7 @@ authors = ["Filipe Gonçalves <filipe@codinghighway.com>"]
 license = "MIT"
 keywords = ["conf", "config", "configuration", "libconfig", "rust-config", "parse", "parser", "json"]
 documentation = "http://filipegoncalves.github.io/rust-config/config/"
+homepage = "https://github.com/filipegoncalves/rust-config"
 repository = "https://github.com/filipegoncalves/rust-config"
 readme = "README.md"
 
