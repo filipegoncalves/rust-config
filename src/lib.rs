@@ -97,7 +97,8 @@
 //! "a string literal"
 //! ```
 //!
-//! See the integration tests for sample use cases and more complex examples.
+//! See the integration tests (in the `tests/` directory) for sample use cases and more complex
+//! examples.
 //!
 //!# Grammar
 //!
