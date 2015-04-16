@@ -32,7 +32,7 @@ as soon as the public API is designed and mostly implemented.
 - [X] Write tests that are expected to fail
 - [X] Add missing documentation for undocumented code
 - [X] Document `parser::ParseErr`
-- [ ] Write misc documentation with a high level description of the module and its features
+- [X] Write misc documentation with a high level description of the module and its features
 - [ ] Write integration tests
 - [X] Document when, why and how `parse()` returns `Err`
 - [ ] `hex` and `hex64` literals support?
