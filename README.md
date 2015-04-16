@@ -7,12 +7,11 @@ Currently this doesn't compile on 1.0.0-beta because `rust-peg` uses features th
 In the meantime, just stick to rust nightly and you should be good.
 
 # Goal
-A soon-to-be Rust library to read and parse configuration files.
+A Rust library to read and parse configuration files.
 
 The idea is to make it very similar to [libconfig](http://www.hyperrealm.com/libconfig/), with a few extra additions / tweaks.
 
-This is still under heavy development and should be considered **unstable**. I will publish a first version on [crates](https://crates.io)
-as soon as the public API is designed and mostly implemented.
+This is still under heavy development. As of this writing, the library is still very basic and can only read / load a configuration. It also includes a rudimentary set of methods to browse the loaded data.
 
 # TODO
 
@@ -33,7 +32,7 @@ as soon as the public API is designed and mostly implemented.
 - [X] Add missing documentation for undocumented code
 - [X] Document `parser::ParseErr`
 - [X] Write misc documentation with a high level description of the module and its features
-- [ ] Write integration tests
+- [X] Write integration tests
 - [X] Document when, why and how `parse()` returns `Err`
 - [ ] `hex` and `hex64` literals support?
 - [ ] Add option to indicate the conf. file encoding
