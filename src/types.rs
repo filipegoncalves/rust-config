@@ -6,19 +6,16 @@ use std::collections::HashMap;
 /// The top-level `Config` type that represents a configuration
 #[derive(PartialEq)]
 #[derive(Debug)]
-#[unstable = "Library still under heavy development; design may change."]
 pub struct Config {
     root: Value
 }
 
 /// Settings list representation. Associates settings to their names.
-#[unstable = "Library still under heavy development; design may change."]
 pub type SettingsList = HashMap<String, Setting>;
 
 /// A `Setting` representation. Settings have a name and a value.
 #[derive(PartialEq)]
 #[derive(Debug)]
-#[unstable = "Library still under heavy development; design may change."]
 pub struct Setting {
     /// Setting name, as read from the configuration file
     pub name: String,
@@ -29,7 +26,6 @@ pub struct Setting {
 /// A type representing a generic value. `Setting`s store `Value`s.
 #[derive(PartialEq)]
 #[derive(Debug)]
-#[unstable = "Library still under heavy development; design may change."]
 pub enum Value {
     /// A scalar
     Svalue(ScalarValue),
@@ -45,7 +41,6 @@ pub enum Value {
 /// The scalar values representation. Scalar values bind directly to Rust primitive types.
 #[derive(PartialEq)]
 #[derive(Debug)]
-#[unstable = "Library still under heavy development; design may change."]
 pub enum ScalarValue {
     /// A boolean scalar
     Boolean(bool),
@@ -63,17 +58,14 @@ pub enum ScalarValue {
 
 /// The type used to represent the scalars inside an array.
 /// An array can only store scalar values of the same type.
-#[unstable = "Library still under heavy development; design may change."]
 pub type ArrayValue = Vec<Value>;
 
 /// The type used to represent the generic values inside a list.
 /// Lists are heterogeneous and can store any type of value, including other lists.
-#[unstable = "Library still under heavy development; design may change."]
 pub type ListValue = Vec<Value>;
 
 impl Config {
     /// Creates a new wrapper `Config` to hold a `SettingsList`
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn new(sl: SettingsList) -> Config {
         Config { root: Value::Group(sl) }
     }
@@ -113,7 +105,6 @@ impl Config {
     ///
     /// ```
     ///
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn lookup(&self, path: &str) -> Option<&Value> {
         let mut last_value = &self.root;
         for segment in path.split(".") {
@@ -158,7 +149,6 @@ impl Config {
     /// type of a generic `Value`.
     /// Returns `None` in the same way `lookup()` does; or if the underlying `Value`
     /// type does not match with the requested type - in this case, `bool`.
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn lookup_boolean(&self, path: &str) -> Option<bool> {
         self.lookup(path).and_then(|v|
                                    match v {
@@ -171,7 +161,6 @@ impl Config {
     /// type of a generic `Value`.
     /// Returns `None` in the same way `lookup()` does; or if the underlying `Value`
     /// type does not match with the requested type - in this case, `i32`.
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn lookup_integer32(&self, path: &str) -> Option<i32> {
         self.lookup(path).and_then(|v|
                                    match v {
@@ -184,7 +173,6 @@ impl Config {
     /// type of a generic `Value`.
     /// Returns `None` in the same way `lookup()` does; or if the underlying `Value`
     /// type does not match with the requested type - in this case, `i64`.
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn lookup_integer64(&self, path: &str) -> Option<i64> {
         self.lookup(path).and_then(|v|
                                    match v {
@@ -197,7 +185,6 @@ impl Config {
     /// type of a generic `Value`.
     /// Returns `None` in the same way `lookup()` does; or if the underlying `Value`
     /// type does not match with the requested type - in this case, `f32`.
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn lookup_floating32(&self, path: &str) -> Option<f32> {
         self.lookup(path).and_then(|v|
                                    match v {
@@ -210,7 +197,6 @@ impl Config {
     /// type of a generic `Value`.
     /// Returns `None` in the same way `lookup()` does; or if the underlying `Value`
     /// type does not match with the requested type - in this case, `f64`.
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn lookup_floating64(&self, path: &str) -> Option<f64> {
         self.lookup(path).and_then(|v|
                                    match v {
@@ -223,7 +209,6 @@ impl Config {
     /// type of a generic `Value`.
     /// Returns `None` in the same way `lookup()` does; or if the underlying `Value`
     /// type does not match with the requested type - in this case, `String`.
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn lookup_str(&self, path: &str) -> Option<&str> {
         self.lookup(path).and_then(|v|
                                    match v {
@@ -235,7 +220,6 @@ impl Config {
     /// A convenient wrapper around `lookup_boolean()` that unwraps the underlying primitive
     /// type of a boolean `Value`. If either of `lookup_boolean()` or `lookup` return `None`,
     /// then the user-provided default value is returned.
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn lookup_boolean_or(&self, path: &str, default: bool) -> bool {
         self.lookup_boolean(path).unwrap_or(default)
     }
@@ -243,7 +227,6 @@ impl Config {
     /// A convenient wrapper around `lookup_integer32()` that unwraps the underlying primitive
     /// type of an integer32 `Value`. If either of `lookup_integer32()` or `lookup` return `None`,
     /// then the user-provided default value is returned.
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn lookup_integer32_or(&self, path: &str, default: i32) -> i32 {
         self.lookup_integer32(path).unwrap_or(default)
     }
@@ -251,7 +234,6 @@ impl Config {
     /// A convenient wrapper around `lookup_integer64()` that unwraps the underlying primitive
     /// type of an integer64 `Value`. If either of `lookup_integer64()` or `lookup` return `None`,
     /// then the user-provided default value is returned.
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn lookup_integer64_or(&self, path: &str, default: i64) -> i64 {
         self.lookup_integer64(path).unwrap_or(default)
     }
@@ -259,7 +241,6 @@ impl Config {
     /// A convenient wrapper around `lookup_floating32()` that unwraps the underlying primitive
     /// type of an floating32 `Value`. If either of `lookup_floating32()` or `lookup` return `None`,
     /// then the user-provided default value is returned.
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn lookup_floating32_or(&self, path: &str, default: f32) -> f32 {
         self.lookup_floating32(path).unwrap_or(default)
     }
@@ -267,7 +248,6 @@ impl Config {
     /// A convenient wrapper around `lookup_floating64()` that unwraps the underlying primitive
     /// type of an floating64 `Value`. If either of `lookup_floating64()` or `lookup` return `None`,
     /// then the user-provided default value is returned.
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn lookup_floating64_or(&self, path: &str, default: f64) -> f64 {
         self.lookup_floating64(path).unwrap_or(default)
     }
@@ -275,7 +255,6 @@ impl Config {
     /// A convenient wrapper around `lookup_str()` that unwraps the underlying primitive
     /// type of a string `Value`. If either of `lookup_str()` or `lookup` return `None`,
     /// then the user-provided default value is returned.
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn lookup_str_or<'a>(&'a self, path: &str, default: &'a str) -> &'a str {
         self.lookup_str(path).unwrap_or(default)
     }
@@ -337,7 +316,6 @@ impl Setting {
     /// let my_setting = Setting::new(setting_name, setting_value);
     /// ```
     ///
-    #[unstable = "Library still under heavy development; design may change."]
     pub fn new(sname: String, val: Value) -> Setting {
         Setting { name: sname, value: val }
     }

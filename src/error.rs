@@ -11,7 +11,6 @@ use parser::ParseError;
 
 /// A generic configuration error type
 #[derive(Debug)]
-#[unstable = "Library still under heavy development; design may change."]
 pub struct ConfigError {
     /// Indicates what kind of error this is
     pub kind: ConfigErrorKind,
@@ -24,7 +23,6 @@ pub struct ConfigError {
 /// Possible error kinds
 #[derive(Debug)]
 #[derive(PartialEq)]
-#[unstable = "Library still under heavy development; design may change."]
 pub enum ConfigErrorKind {
     /// An I/O error. Can only occur if reading from a stream (file, socket, etc.)
     IoError,
@@ -33,7 +31,6 @@ pub enum ConfigErrorKind {
 }
 
 /// Converts an I/O Error into a `ConfigError`
-#[unstable = "Library still under heavy development; design may change."]
 pub fn from_io_err(err: IoError) -> ConfigError {
     ConfigError {
         kind: ConfigErrorKind::IoError,
@@ -43,7 +40,6 @@ pub fn from_io_err(err: IoError) -> ConfigError {
 }
 
 /// Converts a `ParseError` into a `ConfigError`
-#[unstable = "Library still under heavy development; design may change."]
 pub fn from_parse_err(err: ParseError) -> ConfigError {
     ConfigError {
         kind: ConfigErrorKind::ParseError,
