@@ -21,7 +21,7 @@ This is still under heavy development. As of this writing, the library is still 
 
 ```toml
 [dependencies]
-nom = "~0.2.0"
+config = "~0.0.1"
 ```
 
 # Getting started
