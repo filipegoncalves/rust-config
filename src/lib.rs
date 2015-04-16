@@ -197,6 +197,9 @@
 //! ```
 //!
 
+#![crate_name = "config"]
+#![crate_type = "lib"]
+#![warn(missing_docs)]
 #![feature(rustc_private)]
 #![feature(collections, str_char)]
 #![feature(plugin)]
