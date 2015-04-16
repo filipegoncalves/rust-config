@@ -94,7 +94,7 @@ pub fn from_stream<T: Read>(stream: &mut T) -> Result<Config, ConfigError> {
 ///
 /// use config::reader::from_file;
 ///
-/// let parsed = from_file(Path::new("examples/sample.conf"));
+/// let parsed = from_file(Path::new("tests/sample.conf"));
 /// assert!(parsed.is_ok());
 /// ```
 ///
@@ -240,7 +240,7 @@ mod test {
 
     #[test]
     fn conf_from_file() {
-        let parsed = from_file(Path::new("examples/sample.conf"));
+        let parsed = from_file(Path::new("tests/sample.conf"));
         assert!(parsed.is_ok());
     }
 }
