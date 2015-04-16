@@ -1,8 +1,4 @@
-//! This module defines the reader types that are available to parse a configuration.
-//! Every reader will first attempt to read the whole configuration into memory, and only begins
-//! parsing once everything was read. Future plans include redesigning this part of try to
-//! come up with a more efficient method that doesn't involve reading everything into memory
-//! before invoking the parser.
+//! Reader types to parse a configuration.
 
 use std::io::Read;
 use std::path::Path;
@@ -20,8 +16,8 @@ use error::{from_io_err, from_parse_err};
 /// If a syntax error is reported, it means that the stream successfully delivered every piece of
 /// data, since parsing doesn't start until the whole input is read to memory.
 /// # Examples
-/// For educational / demonstration purposes, we can wrap a string inside a `Cursor` and parse it as
-/// a configuration:
+/// For educational / demonstration purposes, we can wrap a string inside a `Cursor` to simulate
+/// a stream of data:
 ///
 /// ```
 /// use std::io::Cursor;

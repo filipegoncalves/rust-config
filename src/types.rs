@@ -1,5 +1,4 @@
-//! This module defines the internal types used to represent a configuration and the corresponding
-//! primitives to browse a successfully parsed configuration.
+//! Internal types used to represent a configuration and corresponding primitives to browse it
 
 use std::collections::HashMap;
 
