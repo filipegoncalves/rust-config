@@ -2,9 +2,6 @@
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/filipegoncalves/rust-config?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) [![Build Status](https://travis-ci.org/filipegoncalves/rust-config.svg?branch=master)](https://travis-ci.org/filipegoncalves/rust-config)
 
-# Note
-Build is failing with the latest nightly because of a cargo / rustdoc bug (the issue has been reported [here](https://github.com/rust-lang/cargo/issues/1512)).
-
 # Beta compatibility
 Currently this doesn't compile on 1.0.0-beta because `rust-peg` uses features that are not available in the beta channel. I am looking into several options, including switching to [nom](https://github.com/Geal/nom).
 In the meantime, just stick to rust nightly and you should be good.
