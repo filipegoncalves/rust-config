@@ -18,14 +18,14 @@ as soon as the public API is designed and mostly implemented.
 
 ## Features
 - [X] Allow single and multi-line comments in configurations
-- [ ] Add `#include` support to include other configuration files. Not trivial because of the way the parser works
+- [ ] Add `#include` support to include other configuration files
 - [X] Automatically concatenate blank-separated string literals in the configuration. Useful for settings with big strings
 - [ ] Export a public API to manipulate a configuration in runtime and possibly write it to a file
 
 ## Parser
-- [ ] Fix an annoying bug where the parser won't accept `1E6` as a valid `Floating32` value
 - [X] Figure out why the parser returns an error on a blanks-only configuration
-- [ ] Consider splitting the parser into lexer + syntax analyser (much like we would in C with flex + byacc)
+- [ ] Consider splitting the parser into lexer + syntax analyser (much like we would in C with flex + byacc), OR
+- [ ] Use [nom](https://github.com/Geal/nom) to generate the parser instead of rust-peg. Rust-peg uses features that will not be available in beta.
 
 ## Misc
 - [X] Refactor misc types (`Setting`, `SettingsList`, etc) into a separate, independent module
