@@ -1,6 +1,6 @@
 # config
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/filipegoncalves/rust-config?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) [![Build Status](https://travis-ci.org/filipegoncalves/rust-config.svg?branch=master)](https://travis-ci.org/filipegoncalves/rust-config)
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/filipegoncalves/rust-config?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) [![Build Status](https://travis-ci.org/filipegoncalves/rust-config.svg?branch=master)](https://travis-ci.org/filipegoncalves/rust-config) [![Crates.io](https://img.shields.io/crates/v/config.svg)](https://crates.io/crates/config)
 
 # Beta compatibility
 Beta compatibility is currently the top priority on this project.
@@ -15,6 +15,14 @@ A Rust library to read and parse configuration files.
 The idea is to make it very similar to [libconfig](http://www.hyperrealm.com/libconfig/), with a few extra additions / tweaks.
 
 This is still under heavy development. As of this writing, the library is still very basic and can only read / load a configuration. It also includes a rudimentary set of methods to browse the loaded data.
+
+# Installation
+`config` is on [crates.io](https://crates.io/crates/config). It can be included in a project using Cargo by adding this to `Cargo.toml`:
+
+```toml
+[dependencies]
+nom = "~0.2.0"
+```
 
 # Getting started
 Updated documentation can be found [here](http://filipegoncalves.github.io/rust-config/config/). The documentation includes small sample use cases, and a full specification of the input format.
