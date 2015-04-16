@@ -45,3 +45,8 @@ Another good example can be found in the integration tests directory (`tests/`).
 - [ ] `hex` and `hex64` literals support?
 - [ ] Add option to indicate the conf. file encoding
 - [X] Enforce the rules for arrays. Arrays are homogeneous and can only hold scalar values
+
+# Contributing
+Contributions will be greatly appreciated. I am currently in the process of rewriting the parser using [nom](https://github.com/Geal/nom), so I'd advice against any pull requests that change the parser or the grammar until the new parser is fully written, tested and in use.
+
+I am relatively new to Rust, and as such, there is probably a lot of room for improvement on the library design and code quality. I started this project to learn the language. So, feel free to fix anything that you think may be wrong.
