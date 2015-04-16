@@ -101,10 +101,98 @@
 //!
 //!# Grammar
 //!
-//! Here's the grammar that describes the configuration input format:
+//! This section describes the configuration input format. The starting rule is `conf`.
 //!
-//! ```ignore
-//! TODO Write this
+//! ```text
+//! conf -> __ settings_list __
+//!
+//! settings_list -> // empty
+//!                | setting settings_list
+//! setting -> __ name __ (":"|"=") __ value __ ";" __
+//!
+//! name -> [a-zA-Z][-a-zA-Z0-9_]*
+//!
+//! value -> scalar_value
+//!        | array_value
+//!        | list_value
+//!        | group_value
+//!
+//! scalar_value -> boolean_scalar_value
+//!               | floating64_scalar_value
+//!               | floating32_scalar_value
+//!               | integer64_scalar_value
+//!               | integer32_scalar_value
+//!               | str_scalar_value
+//!
+//! boolean_scalar_value -> [Tt][Rr][Uu][Ee]
+//!                       | [Yy][Ee][Ss]
+//!                       | [Ff][Aa][Ll][Ss][Ee]
+//!                       | [Nn][Oo]
+//!
+//! floating64_scalar_value -> [+-]?([0-9]+\.[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?"L"
+//!
+//! floating32_scalar_value -> [+-]?([0-9]+\.[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?
+//!
+//! integer32_scalar_value -> [+-]?[0-9]+
+//!
+//! integer64_scalar_value -> [+-]?[0-9]+"L"
+//!
+//! str_scalar_value -> __ str_literal __
+//!                   | __ str_literal __ str_scalar_value
+//!
+//! str_literal -> "\"" ([^\"\\]|(("\\r"|"\\n"|"\\t"|"\\\""|"\\\\")))* "\""
+//!
+//! array_value -> "["
+//!                (bool_array |
+//!                 flt64_array | flt32_array |
+//!                 int64_array | int32_array |
+//!                 str_array)
+//!                "]"
+//!              | "[" __ "]"
+//!
+//! bool_array -> __ boolean_scalar_value __
+//!             | __ boolean_scalar_value __ "," __ bool_array
+//!
+//! flt64_array -> __ floating64_scalar_value __
+//!              | __ floating64_scalar_value __ "," __ flt64_array
+//!
+//! flt32_array -> __ floating32_scalar_value __
+//!              | __ floating32_scalar_value __ "," __ flt32_array
+//
+//! int64_array -> __ integer64_scalar_value __
+//!              | __ integer64_scalar_value __ "," __ int64_array
+//!
+//! int32_array -> __ integer32_scalar_value __
+//!              | __ integer32_scalar_value __ "," __ int32_array
+//!
+//! str_array -> __ str_scalar_value __
+//!            | __ str_scalar_value __ "," __ str_array
+//!
+//! list_value -> "(" __ ")"
+//!             | "(" list_elements ")"
+//!
+//! list_elements -> __ value __
+//!                | __ value __ "," __ list_elements
+//!
+//! group_value -> "{" settings_list "}"
+//!
+//! __ -> // empty
+//!     | whitespace __
+//!     | eol __
+//!     | comment __
+//!
+//! whitespace -> [\s\t]
+//!
+//! eol -> "\r\n"
+//!      | "\n"
+//!
+//! comment -> single_line_comment
+//!          | multi_line_comment
+//!
+//! single_line_comment -> ("//"|"#")[^\n]*"\n"
+//!
+//! multi_line_comment -> "/*"([^*]|"*"[^/])*"*/"
+//!
 //! ```
 //!
 
