@@ -11,8 +11,10 @@ use error::{from_io_err, from_parse_err};
 
 /// Reads a configuration from a generic stream.
 /// Errors can be caused by:
+///
 /// * An I/O error on `stream`, in which case no parsing was done
 /// * A syntax error
+///
 /// If a syntax error is reported, it means that the stream successfully delivered every piece of
 /// data, since parsing doesn't start until the whole input is read to memory.
 /// # Examples
@@ -81,6 +83,7 @@ pub fn from_stream<T: Read>(stream: &mut T) -> Result<Config, ConfigError> {
 
 /// Reads a configuration from a UTF-8 file.
 /// Errors can be caused by:
+///
 /// * An error when trying to locate / open the file. This is treated as an I/O error.
 /// * A syntax error
 ///
