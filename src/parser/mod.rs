@@ -452,6 +452,8 @@ mod test {
         expected.insert("another_str".to_string(),
                         Setting::new("another_str".to_string(),
                                      Value::Svalue(ScalarValue::Str("bye".to_string()))));
+
+        assert_eq!(parsed.unwrap(), expected);
     }
 
     #[test]
