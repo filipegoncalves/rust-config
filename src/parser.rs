@@ -310,17 +310,16 @@ named!(str_scalar_value<&[u8], ScalarValue>,
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Integer values parser and auxiliary parsers ~~~
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-named!(int32_scalar_value<&[u8], ScalarValue>,
+named!(int32_scalar_value_tentative<&[u8], Result<i32, <i32 as FromStr>::Err> >,
        chain!(
            s: map_res!(alt!(tag!("+") | tag!("-")), from_utf8)? ~
            v: map_res!(digit, from_utf8),
            || {
                // Rust's parse::<i32>() and i64 do not accept a leading '+'
                let sign = if s.unwrap_or("+") == "+" { "" } else { "-" };
-               ScalarValue::Integer32(
-                   (&format!("{}{}", sign, v)[..]).parse::<i32>().unwrap())}));
+               (&format!("{}{}", sign, v)[..]).parse::<i32>()}));
 
-named!(int64_scalar_value<&[u8], ScalarValue>,
+named!(int64_scalar_value_tentative<&[u8], Result<i64, <i64 as FromStr>::Err> >,
        chain!(
            s: map_res!(alt!(tag!("+") | tag!("-")), from_utf8)? ~
            v: map_res!(digit, from_utf8) ~
@@ -328,8 +327,19 @@ named!(int64_scalar_value<&[u8], ScalarValue>,
            || {
                // Rust's parse::<i32>() and i64 do not accept a leading '+'
                let sign = if s.unwrap_or("+") == "+" { "" } else { "-" };
-               ScalarValue::Integer64(
-                   (&format!("{}{}", sign, v)[..]).parse::<i64>().unwrap())}));
+               (&format!("{}{}", sign, v)[..]).parse::<i64>()}));
+
+named!(int32_scalar_value<&[u8], ScalarValue>,
+       map_res!(int32_scalar_value_tentative,
+                |r: Result<i32, <i32 as FromStr>::Err>| {
+                    r.map(|v| ScalarValue::Integer32(v))
+                }));
+
+named!(int64_scalar_value<&[u8], ScalarValue>,
+       map_res!(int64_scalar_value_tentative,
+                |r: Result<i64, <i64 as FromStr>::Err>| {
+                    r.map(|v| ScalarValue::Integer64(v))
+                }));
 
 named!(int_scalar_value<&[u8], ScalarValue>,
        alt!(int64_scalar_value | int32_scalar_value));
