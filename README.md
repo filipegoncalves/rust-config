@@ -11,7 +11,7 @@ This is still under heavy development. As of this writing, the library is still 
 
 # Supported rust versions
 
-As of 0.1.0, the library is compatible with both the nightly and the beta channels.
+As of 0.1.0, the library is compatible with both nightly and beta channels.
 
 # Installation
 `config` is on [crates.io](https://crates.io/crates/config). It can be included in a project using Cargo by adding this to `Cargo.toml`:
