@@ -201,11 +201,11 @@
 #![crate_type = "lib"]
 #![warn(missing_docs)]
 #![feature(rustc_private)]
-#![feature(collections, str_char)]
-#![feature(plugin)]
-#![plugin(peg_syntax_ext)]
 
 extern crate syntax;
+
+#[macro_use]
+extern crate nom;
 
 mod parser;
 

@@ -33,7 +33,7 @@ use error::{from_io_err, from_parse_err};
 ///
 /// In this example, we do the same, but with a broken conf:
 ///
-/// ```
+/// ```ignore
 /// use std::io::Cursor;
 /// use config::reader::from_stream;
 /// use config::error::ConfigErrorKind;
@@ -42,7 +42,7 @@ use error::{from_io_err, from_parse_err};
 /// let mut cursor = Cursor::new(sample_conf.as_bytes());
 /// let parsed = from_stream(&mut cursor);
 /// assert!(parsed.is_err());
-/// assert_eq!(parsed.unwrap_err().kind, ConfigErrorKind::ParseError); 
+/// assert_eq!(parsed.unwrap_err().kind, ConfigErrorKind::ParseError);
 /// ```
 ///
 /// The other situation where an error is returned is when the underlying stream
