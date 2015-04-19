@@ -1,17 +1,7 @@
 language: rust
-env:
-    - CHANNEL = "beta"
-    - CHANNEL = "nightly"
-before_install: true
-install:
-    - mkdir ~/rust
-    - curl -s https://static.rust-lang.org/rustup.sh | sudo sh -s -- --channel=$CHANNEL --prefix=~/rust
-before_script:
-    - rustc --version
-    - cargo --version
-script:
-    - cargo build --verbose
-    - cargo test --verbose
+rust:
+  - nightly
+  - beta
 notifications:
   email:
     recipients:
