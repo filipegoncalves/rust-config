@@ -1,6 +1,6 @@
 # Change Log
 
-## 0.1.1 (04/19/2015)
+## 0.1.0 (04/19/2015)
 
 * The parser is now backed by [nom](https://github.com/Geal/nom)
 * Dependencies on `rustc_private` removed
