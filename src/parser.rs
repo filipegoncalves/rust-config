@@ -168,43 +168,9 @@ pub fn parse(config: &str) -> Result<Config, ParseError> {
     }
 }
 
-// ~~~~~~~~~~~~~~~~~~~
-// ~~~ The parsers ~~~
-// ~~~~~~~~~~~~~~~~~~~
-
-fn eof(input:&[u8]) -> IResult<&[u8], &[u8]> {
-    if input.len() == 0 {
-        Done(input, input)
-    } else {
-        Error(0)
-    }
-}
-
-// ~~~ Matches a newline ~~~
-// Modeled after ECMA-262, 5th ed., 7.3.
-named!(eol,
-       alt!(tag!("\r\n") | tag!("\n") | tag!("\u{2028}") | tag!("\u{2029}")));
-
-// ~~~ One-line comments ~~~
-named!(comment_one_line,
-       chain!(
-           alt!(tag!("//") | tag!("#")) ~
-           not_line_ending? ~
-           alt!(eol | eof),
-           || { &b""[..] }));
-
-// ~~~ /* ... */ comments ~~~
-named!(comment_block,
-       chain!(
-           tag!("/*") ~
-           take_until_and_consume!(&b"*/"[..]),
-           || { &b""[..] }));
-
-// ~~~ Comments, new lines, blanks ~~~
-named!(blanks,
-       chain!(
-           many0!(alt!(multispace | comment_one_line | comment_block)),
-           || { &b""[..] }));
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~~~~~~~~~~~~~~~~~~~~~~~~ The parsers ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Top-level parser ~~~
@@ -218,20 +184,9 @@ named!(conf<&[u8], Config>,
            eof,
            || { c }));
 
-// ~~~~~~~~~~~~~
-// ~~~ Group ~~~
-// ~~~~~~~~~~~~~
-named!(group<&[u8], SettingsList>,
-       chain!(
-           tag!("{") ~
-           l: settings_list ~
-           tag!("}"),
-           || { l }));
-
 // ~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Settings List ~~~
 // ~~~~~~~~~~~~~~~~~~~~~
-named!(settings_list_elems<&[u8], Vec<Setting> >, many1!(setting));
 named!(settings_list<&[u8], SettingsList>,
        map_res!(settings_list_elems,
                 |s: Vec<Setting>| -> Result<SettingsList, ()> {
@@ -241,21 +196,11 @@ named!(settings_list<&[u8], SettingsList>,
                     }
                     Ok(res) }));
 
+named!(settings_list_elems<&[u8], Vec<Setting> >, many1!(setting));
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Setting parser and auxiliary parsers ~~~
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// Matches a setting name of the form [a-zA-Z][-a-zA-Z0-9_]*
-named!(setting_name<&[u8], String>,
-       chain!(
-           h: map_res!(alpha, from_utf8) ~
-           t: many0!(map_res!(alt!(tag!("-") | tag!("_") | alphanumeric), from_utf8)),
-           || {
-               t.into_iter().fold(h.to_string(), |mut accum, slice| {
-                   accum.push_str(slice);
-                   accum
-               })}));
-
 named!(setting<&[u8], Setting>,
        chain!(
            blanks? ~
@@ -269,6 +214,17 @@ named!(setting<&[u8], Setting>,
            blanks?,
            || { Setting::new(name, v) }));
 
+// Matches a setting name of the form [a-zA-Z][-a-zA-Z0-9_]*
+named!(setting_name<&[u8], String>,
+       chain!(
+           h: map_res!(alpha, from_utf8) ~
+           t: many0!(map_res!(alt!(tag!("-") | tag!("_") | alphanumeric), from_utf8)),
+           || {
+               t.into_iter().fold(h.to_string(), |mut accum, slice| {
+                   accum.push_str(slice);
+                   accum
+               })}));
+
 // ~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Values parser ~~~
 // ~~~~~~~~~~~~~~~~~~~~~
@@ -279,38 +235,19 @@ named!(value<&[u8], Value>,
            list |
            map_res!(group, |g| -> Result<Value, ()> { Ok(Value::Group(g)) })));
 
+// ~~~~~~~~~~~~~~~~~~~~~
+// ~~~ Scalar Values ~~~
+// ~~~~~~~~~~~~~~~~~~~~~
+named!(scalar_value<&[u8], ScalarValue>,
+       alt!(
+           boolean_scalar_value |
+           flt_scalar_value |
+           int_scalar_value |
+           str_scalar_value));
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Array parser and auxiliary parsers ~~~
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-macro_rules! array_elems {
-    ($name:ident, $parser:ident) => (
-        named!($name<&[u8], ArrayValue>,
-               chain!(
-                   blanks? ~
-                   first: $parser ~
-                   rest:  many0!(chain!(
-                                     blanks? ~
-                                     tag!(",") ~
-                                     blanks? ~
-                                     v: $parser,
-                                     || { v } )) ~
-                   blanks?,
-                   || {
-                       let mut res = Vec::new();
-                       res.push(Value::Svalue(first));
-                       res.extend(rest.into_iter().map(|v| Value::Svalue(v)));
-                       res
-                      }));
-        );
-}
-
-array_elems!(boolean_array_elements, boolean_scalar_value);
-array_elems!(str_array_elements, str_scalar_value);
-array_elems!(flt64_array_elements, flt64_scalar_value);
-array_elems!(flt32_array_elements, flt32_scalar_value);
-array_elems!(int64_array_elements, int64_scalar_value);
-array_elems!(int32_array_elements, int32_scalar_value);
-
 named!(array<&[u8], Value>,
        alt!(
            chain!(tag!("[") ~ blanks? ~ tag!("]"),
@@ -352,15 +289,34 @@ named!(array<&[u8], Value>,
                tag!("]"),
                || { Value::Array(e) })));
 
-// ~~~~~~~~~~~~~~~~~~~~~
-// ~~~ Scalar Values ~~~
-// ~~~~~~~~~~~~~~~~~~~~~
-named!(scalar_value<&[u8], ScalarValue>,
-       alt!(
-           boolean_scalar_value |
-           flt_scalar_value |
-           int_scalar_value |
-           str_scalar_value));
+macro_rules! array_elems {
+    ($name:ident, $parser:ident) => (
+        named!($name<&[u8], ArrayValue>,
+               chain!(
+                   blanks? ~
+                   first: $parser ~
+                   rest:  many0!(chain!(
+                                     blanks? ~
+                                     tag!(",") ~
+                                     blanks? ~
+                                     v: $parser,
+                                     || { v } )) ~
+                   blanks?,
+                   || {
+                       let mut res = Vec::new();
+                       res.push(Value::Svalue(first));
+                       res.extend(rest.into_iter().map(|v| Value::Svalue(v)));
+                       res
+                      }));
+        );
+}
+
+array_elems!(boolean_array_elements, boolean_scalar_value);
+array_elems!(str_array_elements, str_scalar_value);
+array_elems!(flt64_array_elements, flt64_scalar_value);
+array_elems!(flt32_array_elements, flt32_scalar_value);
+array_elems!(int64_array_elements, int64_scalar_value);
+array_elems!(int32_array_elements, int32_scalar_value);
 
 // ~~~~~~~~~~~~~
 // ~~~ Lists ~~~
@@ -389,11 +345,21 @@ named!(list<&[u8], Value>,
                        Value::List(res)
                       })));
 
-              
+// ~~~~~~~~~~~~~
+// ~~~ Group ~~~
+// ~~~~~~~~~~~~~
+named!(group<&[u8], SettingsList>,
+       chain!(
+           tag!("{") ~
+           l: settings_list ~
+           tag!("}"),
+           || { l }));              
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Boolean values parser and auxiliary parsers ~~~
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+named!(boolean_scalar_value<&[u8], ScalarValue>, alt!(bool_true_value | bool_false_value));
+
 named!(bool_true_value<&[u8], ScalarValue>,
        alt!(chain!(
                alt!(tag!("T") | tag!("t")) ~
@@ -422,9 +388,22 @@ named!(bool_false_value<&[u8], ScalarValue>,
                alt!(tag!("O") | tag!("o")),
                || { ScalarValue::Boolean(false) } )));
 
-named!(boolean_scalar_value<&[u8], ScalarValue>, alt!(bool_true_value | bool_false_value));
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~~ String parser and auxiliary parsers ~~~
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+named!(str_scalar_value<&[u8], ScalarValue>,
+       chain!(
+           strs: many1!(chain!(
+                        s: string_literal ~
+                        blanks?,
+                        || { s })),
+           || {
+               ScalarValue::Str(
+                   strs.into_iter().fold(String::new(), |mut accum, str_i| {
+                       accum.push_str(&str_i[..]);
+                       accum
+                   }))}));
 
-// ~~~ String literal parser and auxiliary parsers ~~~
 named!(not_escaped_seq<&[u8], &[u8]>, take_until_either!(&b"\\\""[..]));
 named!(escaped_seq, alt!(tag!("\\r") | tag!("\\n") | tag!("\\t") | tag!("\\\"") | tag!("\\\\")));
 named!(string_literal<&[u8], String>,
@@ -439,23 +418,15 @@ named!(string_literal<&[u8], String>,
                                                       accum
                                                   })[..])}));
 
-// ~~~ This parser concatenates adjacent string literals. It represents an Str scalar value ~~~
-named!(str_scalar_value<&[u8], ScalarValue>,
-       chain!(
-           strs: many1!(chain!(
-                        s: string_literal ~
-                        blanks?,
-                        || { s })),
-           || {
-               ScalarValue::Str(
-                   strs.into_iter().fold(String::new(), |mut accum, str_i| {
-                       accum.push_str(&str_i[..]);
-                       accum
-                   }))}));
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Integer values parser and auxiliary parsers ~~~
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+named!(int_scalar_value<&[u8], ScalarValue>,
+       alt!(int64_scalar_value | int32_scalar_value));
+
+// Tentative parser to match Integer32 scalar values
+// Returns an `Err` if `parse::<i32>()` fails
+// [+-][0-9]+
 named!(int32_scalar_value_tentative<&[u8], Result<i32, <i32 as FromStr>::Err> >,
        chain!(
            s: map_res!(alt!(tag!("+") | tag!("-")), from_utf8)? ~
@@ -465,6 +436,9 @@ named!(int32_scalar_value_tentative<&[u8], Result<i32, <i32 as FromStr>::Err> >,
                let sign = if s.unwrap_or("+") == "+" { "" } else { "-" };
                (&format!("{}{}", sign, v)[..]).parse::<i32>()}));
 
+// Tentative parser to match Integer64 scalar values
+// Returns an `Err` if `parse::<i64>()` fails
+// [+-][0-9]+L
 named!(int64_scalar_value_tentative<&[u8], Result<i64, <i64 as FromStr>::Err> >,
        chain!(
            s: map_res!(alt!(tag!("+") | tag!("-")), from_utf8)? ~
@@ -475,24 +449,25 @@ named!(int64_scalar_value_tentative<&[u8], Result<i64, <i64 as FromStr>::Err> >,
                let sign = if s.unwrap_or("+") == "+" { "" } else { "-" };
                (&format!("{}{}", sign, v)[..]).parse::<i64>()}));
 
+// Transforms a possible `Err` returned by `parse::<i32>()` into a parse `Error`
 named!(int32_scalar_value<&[u8], ScalarValue>,
        map_res!(int32_scalar_value_tentative,
                 |r: Result<i32, <i32 as FromStr>::Err>| {
                     r.map(|v| ScalarValue::Integer32(v))
                 }));
 
+// Transforms a possible `Err` returned by `parse::<i64>()` into a parse `Error`
 named!(int64_scalar_value<&[u8], ScalarValue>,
        map_res!(int64_scalar_value_tentative,
                 |r: Result<i64, <i64 as FromStr>::Err>| {
                     r.map(|v| ScalarValue::Integer64(v))
                 }));
 
-named!(int_scalar_value<&[u8], ScalarValue>,
-       alt!(int64_scalar_value | int32_scalar_value));
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Floating point values parser and auxiliary parsers ~~~
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+named!(flt_scalar_value<&[u8], ScalarValue>,
+       alt!(flt64_scalar_value | flt32_scalar_value));
 
 // Auxiliary parser for floats with digits before .
 // [0-9]+\.[0-9]*
@@ -525,9 +500,9 @@ named!(flt_exponent<&[u8], (&str, &str)>,
            v: map_res!(digit, from_utf8),
            || { (s.unwrap_or("+"), v) }));
 
-// Parser to match Floating64 and Floating32 scalar values
-// [+-]?([0-9]+\.[0-9]* | \.[0-9]+)([eE][+-]?[0-9]+)?L?
-
+// Tentative parser to match Floating32 scalar values
+// Returns an `Err` if `parse::<f32>()` fails
+// [+-]?([0-9]+\.[0-9]* | \.[0-9]+)([eE][+-]?[0-9]+)?
 named!(flt32_scalar_value_tentative<&[u8], Result<f32, <f32 as FromStr>::Err> >,
        chain!(
            s: map_res!(alt!(tag!("+") | tag!("-")), from_utf8)? ~
@@ -541,6 +516,9 @@ named!(flt32_scalar_value_tentative<&[u8], Result<f32, <f32 as FromStr>::Err> >,
                (&format!("{}{}.{}e{}{}", sign, base_bef, base_after,
                          exp_sign, exp_val)[..]).parse::<f32>()}));
 
+// Tentative parser to match Floating64 scalar values
+// Returns an Err if parse::<f64>() fails
+// [+-]?([0-9]+\.[0-9]* | \.[0-9]+)([eE][+-]?[0-9]+)?L
 named!(flt64_scalar_value_tentative<&[u8], Result<f64, <f64 as FromStr>::Err> >,
        chain!(
            s: map_res!(alt!(tag!("+") | tag!("-")), from_utf8)? ~
@@ -555,20 +533,57 @@ named!(flt64_scalar_value_tentative<&[u8], Result<f64, <f64 as FromStr>::Err> >,
                (&format!("{}{}.{}e{}{}", sign, base_bef, base_after,
                          exp_sign, exp_val)[..]).parse::<f64>()}));
 
+// Transforms a possible `Err` returned by `parse::<f32>()` into a parse `Error`
 named!(flt32_scalar_value<&[u8], ScalarValue>,
        map_res!(flt32_scalar_value_tentative,
                 |r: Result<f32, <f32 as FromStr>::Err>| {
                     r.map(|v| ScalarValue::Floating32(v))
                 }));
 
+// Transforms a possible `Err` returned by `parse::<f64>()` into a parse `Error`
 named!(flt64_scalar_value<&[u8], ScalarValue>,
        map_res!(flt64_scalar_value_tentative,
                 |r: Result<f64, <f64 as FromStr>::Err>| {
                     r.map(|v| ScalarValue::Floating64(v))
                 }));
 
-named!(flt_scalar_value<&[u8], ScalarValue>,
-       alt!(flt64_scalar_value | flt32_scalar_value));
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~~ Parser to ignore useless stuff: comments, new lines, ... ~~~
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+named!(blanks,
+       chain!(
+           many0!(alt!(multispace | comment_one_line | comment_block)),
+           || { &b""[..] }));
+
+// Auxiliary parser to ignore newlines
+// NOTE: In some cases, this parser is combined with others that use `not_line_ending`
+//       However, `not_line_ending` won't match `\u{2028}` or `\u{2029}`
+named!(eol,
+       alt!(tag!("\r\n") | tag!("\n") | tag!("\u{2028}") | tag!("\u{2029}")));
+
+// Auxiliary parser to ignore one-line comments
+named!(comment_one_line,
+       chain!(
+           alt!(tag!("//") | tag!("#")) ~
+           not_line_ending? ~
+           alt!(eol | eof),
+           || { &b""[..] }));
+
+// Auxiliary parser to ignore block comments
+named!(comment_block,
+       chain!(
+           tag!("/*") ~
+           take_until_and_consume!(&b"*/"[..]),
+           || { &b""[..] }));
+
+// This parser is successful only if the input is over
+fn eof(input:&[u8]) -> IResult<&[u8], &[u8]> {
+    if input.len() == 0 {
+        Done(input, input)
+    } else {
+        Error(0)
+    }
+}
 
 #[cfg(test)]
 mod test {
