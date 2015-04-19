@@ -1,4 +1,150 @@
-
+//! The core parser module.
+//! Upon successfully parsing a configuration, a `Config` is created. Conceptually, a
+//! `Config` consits of a `SettingsList`, which is a map that binds a `Setting` name to a `Value`.
+//!
+//! This map is the basis for the rest of the library. The public library API is nothing more
+//! than a simple set of wrappers to make it easier to manage a the `SettingsList` inside
+//! a `Config`.
+//!
+//! When a parse call is invoked, a settings list is built as input is read. It is not expected that
+//! library users manipulate or otherwise deal directly with these internal data structures.
+//!
+//! Most of the setting types allowed in a configuration will pretty much map to either a Rust
+//! primitive type or a container.
+//!
+//! # Examples
+//! This example shows how to create a settings list and store a `Boolean` scalar value named
+//! `my_setting` with the boolean value `true`. This is how the parser works internally.
+//!
+//! The first step is to create a new, empty settings list:
+//!
+//! ```
+//! use config::types::SettingsList;
+//! # use config::types::ScalarValue;
+//! # use config::types::Value;
+//! # use config::types::Setting;
+//!
+//! let mut my_settings_list = SettingsList::new();
+//! # let setting_name = "my_setting".to_string();
+//! # let a_scalar = ScalarValue::Boolean(true);
+//! # let setting_value = Value::Svalue(a_scalar);
+//! # let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! # my_settings_list.insert(setting_name, my_setting);
+//! ```
+//!
+//! Next, we define the setting name as `my_setting`:
+//!
+//! ```
+//! # use config::types::SettingsList;
+//! # use config::types::ScalarValue;
+//! # use config::types::Value;
+//! # use config::types::Setting;
+//!
+//! # let mut my_settings_list = SettingsList::new();
+//! let setting_name = "my_setting".to_string();
+//! # let a_scalar = ScalarValue::Boolean(true);
+//! # let setting_value = Value::Svalue(a_scalar);
+//! # let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! # my_settings_list.insert(setting_name, my_setting);
+//! ```
+//!
+//! Then, we create a boolean scalar value holding `true`:
+//!
+//! ```
+//! # use config::types::SettingsList;
+//! use config::types::ScalarValue;
+//! # use config::types::Value;
+//! # use config::types::Setting;
+//!
+//! # let mut my_settings_list = SettingsList::new();
+//! # let setting_name = "my_setting".to_string();
+//! let a_scalar = ScalarValue::Boolean(true);
+//! # let setting_value = Value::Svalue(a_scalar);
+//! # let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! # my_settings_list.insert(setting_name, my_setting);
+//! ```
+//!
+//! ... and we wrap it in a `Value`, because settings store generic values:
+//!
+//! ```
+//! # use config::types::SettingsList;
+//! # use config::types::ScalarValue;
+//! use config::types::Value;
+//! # use config::types::Setting;
+//!
+//! # let mut my_settings_list = SettingsList::new();
+//! # let setting_name = "my_setting".to_string();
+//! # let a_scalar = ScalarValue::Boolean(true);
+//! let setting_value = Value::Svalue(a_scalar);
+//! # let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! # my_settings_list.insert(setting_name, my_setting);
+//! ```
+//!
+//! And finally, we create the new setting:
+//!
+//! ```
+//! # use config::types::SettingsList;
+//! # use config::types::ScalarValue;
+//! # use config::types::Value;
+//! use config::types::Setting;
+//!
+//! # let mut my_settings_list = SettingsList::new();
+//! # let setting_name = "my_setting".to_string();
+//! # let a_scalar = ScalarValue::Boolean(true);
+//! # let setting_value = Value::Svalue(a_scalar);
+//! let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! # my_settings_list.insert(setting_name, my_setting);
+//! ```
+//! ... and insert it into the settings list:
+//!
+//! ```
+//! # use config::types::SettingsList;
+//! # use config::types::ScalarValue;
+//! # use config::types::Value;
+//! # use config::types::Setting;
+//!
+//! # let mut my_settings_list = SettingsList::new();
+//! # let setting_name = "my_setting".to_string();
+//! # let a_scalar = ScalarValue::Boolean(true);
+//! # let setting_value = Value::Svalue(a_scalar);
+//! # let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! my_settings_list.insert(setting_name, my_setting);
+//! ```
+//!
+//! Here's the complete example:
+//! ```
+//! use config::types::SettingsList;
+//! use config::types::ScalarValue;
+//! use config::types::Value;
+//! use config::types::Setting;
+//!
+//! let mut my_settings_list = SettingsList::new();
+//! let setting_name = "my_setting".to_string();
+//! let a_scalar = ScalarValue::Boolean(true);
+//! let setting_value = Value::Svalue(a_scalar);
+//! let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! my_settings_list.insert(setting_name, my_setting);
+//! ```
+//!
+//! As a final step, the parser creates a `Config` out of the `SettingsList`.
+//! This is what the user sees and interacts with. It is as simple as:
+//!
+//! ```
+//! # use config::types::SettingsList;
+//! # use config::types::ScalarValue;
+//! # use config::types::Value;
+//! # use config::types::Setting;
+//! use config::types::Config;
+//!
+//! # let mut my_settings_list = SettingsList::new();
+//! # let setting_name = "my_setting".to_string();
+//! # let a_scalar = ScalarValue::Boolean(true);
+//! # let setting_value = Value::Svalue(a_scalar);
+//! # let my_setting = Setting::new(setting_name.clone(), setting_value);
+//! # my_settings_list.insert(setting_name, my_setting);
+//! let my_config = Config::new(my_settings_list);
+//! ```
+//!
 
 use std::str::from_utf8;
 use std::str::FromStr;
