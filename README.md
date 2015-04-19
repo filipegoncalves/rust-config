@@ -2,13 +2,6 @@
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/filipegoncalves/rust-config?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) [![Build Status](https://travis-ci.org/filipegoncalves/rust-config.svg?branch=master)](https://travis-ci.org/filipegoncalves/rust-config) [![Crates.io](https://img.shields.io/crates/v/config.svg)](https://crates.io/crates/config)
 
-# Beta compatibility
-Beta compatibility is currently the top priority on this project.
-
-Sadly, this doesn't compile on 1.0.0-beta because `rust-peg` uses features that are not available in the beta channel. I am looking into several options, including switching to [nom](https://github.com/Geal/nom).
-
-In the meantime, just stick to rust nightly and you should be good.
-
 # Description
 A Rust library to read and parse configuration files.
 
@@ -16,12 +9,16 @@ The idea is to make it very similar to [libconfig](http://www.hyperrealm.com/lib
 
 This is still under heavy development. As of this writing, the library is still very basic and can only read / load a configuration. It also includes a rudimentary set of methods to browse the loaded data.
 
+# Supported rust versions
+
+As of 0.1.0, the library is compatible with both the nightly and the beta channels.
+
 # Installation
 `config` is on [crates.io](https://crates.io/crates/config). It can be included in a project using Cargo by adding this to `Cargo.toml`:
 
 ```toml
 [dependencies]
-config = "~0.0.1"
+config = "~0.1.0"
 ```
 
 # Getting started
@@ -36,11 +33,11 @@ Another good example can be found in the integration tests directory (`tests/`).
 - [ ] Add `#include` support to include other configuration files
 - [X] Automatically concatenate blank-separated string literals in the configuration. Useful for settings with big strings
 - [ ] Export a public API to manipulate a configuration in runtime and possibly write it to a file
+- [ ] Add more escape sequences possibilities in string literals (make it similar to what Rust supports)
 
 ## Parser
 - [X] Figure out why the parser returns an error on a blanks-only configuration
-- [ ] Consider splitting the parser into lexer + syntax analyser (much like we would in C with flex + byacc), OR
-- [ ] Use [nom](https://github.com/Geal/nom) to generate the parser instead of rust-peg. Rust-peg uses features that will not be available in beta.
+- [X] Use [nom](https://github.com/Geal/nom) to generate the parser instead of rust-peg. Rust-peg uses features that will not be available in beta.
 
 ## Misc
 - [X] Refactor misc types (`Setting`, `SettingsList`, etc) into a separate, independent module
@@ -55,6 +52,6 @@ Another good example can be found in the integration tests directory (`tests/`).
 - [X] Enforce the rules for arrays. Arrays are homogeneous and can only hold scalar values
 
 # Contributing
-Contributions will be greatly appreciated. I am currently in the process of rewriting the parser using [nom](https://github.com/Geal/nom), so I'd advice against any pull requests that change the parser or the grammar until the new parser is fully written, tested and in use.
+Contributions will be greatly appreciated. Feel free to reach out on Gitter or IRC. I'm Fill on irc.mozilla.org. You can find me on #rust and #rust-config.
 
 I am relatively new to Rust, and as such, there is probably a lot of room for improvement on the library design and code quality. I started this project to learn the language. So, feel free to fix anything that you think may be wrong.
