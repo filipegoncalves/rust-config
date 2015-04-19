@@ -146,11 +146,12 @@
 //! ```
 //!
 
+use std::str;
 use std::str::from_utf8;
 use std::str::FromStr;
+use std::iter;
 
 use types::{SettingsList, Setting, Value, ScalarValue, ArrayValue, ListValue, Config};
-use syntax::parse;
 
 use nom::{alpha, alphanumeric, digit, multispace, not_line_ending};
 use nom::{IResult, Needed};
@@ -412,11 +413,11 @@ named!(string_literal<&[u8], String>,
            s: many0!(map_res!(alt!(escaped_seq | not_escaped_seq), from_utf8)) ~
            tag!("\""),
            || {
-               parse::str_lit(&s.into_iter().fold(String::new(),
-                                                  |mut accum, slice| {
-                                                      accum.push_str(slice);
-                                                      accum
-                                                  })[..])}));
+               str_lit(&s.into_iter().fold(String::new(),
+                                           |mut accum, slice| {
+                                               accum.push_str(slice);
+                                               accum
+                                           })[..])}));
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Integer values parser and auxiliary parsers ~~~
@@ -583,6 +584,146 @@ fn eof(input:&[u8]) -> IResult<&[u8], &[u8]> {
     } else {
         Error(0)
     }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~~ End of parsers section ~~~
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// The following code to unescape string literals was copied from Rust's source
+// It's in src/libsyntax/parse/mod.rs
+// We use it here to avoid using the `rustc_private` feature, which would break the build on the
+// beta channel
+
+/// Parse a string representing a character literal into its final form.
+/// Rather than just accepting/rejecting a given literal, unescapes it as
+/// well. Can take any slice prefixed by a character escape. Returns the
+/// character and the number of characters consumed.
+fn char_lit(lit: &str) -> (char, isize) {
+    use std::char;
+
+    let mut chars = lit.chars();
+    let c = match (chars.next(), chars.next()) {
+        (Some(c), None) if c != '\\' => return (c, 1),
+        (Some('\\'), Some(c)) => match c {
+            '"' => Some('"'),
+            'n' => Some('\n'),
+            'r' => Some('\r'),
+            't' => Some('\t'),
+            '\\' => Some('\\'),
+            '\'' => Some('\''),
+            '0' => Some('\0'),
+            _ => { None }
+        },
+        _ => panic!("lexer accepted invalid char escape `{}`", lit)
+    };
+
+    match c {
+        Some(x) => return (x, 2),
+        None => { }
+    }
+
+    let msg = format!("lexer should have rejected a bad character escape {}", lit);
+    let msg2 = &msg[..];
+
+    fn esc(len: usize, lit: &str) -> Option<(char, isize)> {
+        u32::from_str_radix(&lit[2..len], 16).ok()
+        .and_then(char::from_u32)
+        .map(|x| (x, len as isize))
+    }
+
+    let unicode_escape = || -> Option<(char, isize)> {
+        if lit.as_bytes()[2] == b'{' {
+            let idx = lit.find('}').expect(msg2);
+            let subslice = &lit[3..idx];
+            u32::from_str_radix(subslice, 16).ok()
+                .and_then(char::from_u32)
+                .map(|x| (x, subslice.chars().count() as isize + 4))
+        } else {
+            esc(6, lit)
+        }
+    };
+
+    // Unicode escapes
+    return match lit.as_bytes()[1] as char {
+        'x' | 'X' => esc(4, lit),
+        'u' => unicode_escape(),
+        'U' => esc(10, lit),
+        _ => None,
+    }.expect(msg2);
+}
+
+/// Parse a string representing a string literal into its final form. Does
+/// unescaping.
+fn str_lit(lit: &str) -> String {
+    let mut res = String::with_capacity(lit.len());
+
+    // FIXME #8372: This could be a for-loop if it didn't borrow the iterator
+    let error = |i| format!("lexer should have rejected {} at {}", lit, i);
+
+    /// Eat everything up to a non-whitespace
+    fn eat<'a>(it: &mut iter::Peekable<str::CharIndices<'a>>) {
+        loop {
+            match it.peek().map(|x| x.1) {
+                Some(' ') | Some('\n') | Some('\r') | Some('\t') => {
+                    it.next();
+                },
+                _ => { break; }
+            }
+        }
+    }
+
+    let mut chars = lit.char_indices().peekable();
+    loop {
+        match chars.next() {
+            Some((i, c)) => {
+                match c {
+                    '\\' => {
+                        let ch = chars.peek().unwrap_or_else(|| {
+                            panic!("{}", error(i))
+                        }).1;
+
+                        if ch == '\n' {
+                            eat(&mut chars);
+                        } else if ch == '\r' {
+                            chars.next();
+                            let ch = chars.peek().unwrap_or_else(|| {
+                                panic!("{}", error(i))
+                            }).1;
+
+                            if ch != '\n' {
+                                panic!("lexer accepted bare CR");
+                            }
+                            eat(&mut chars);
+                        } else {
+                            // otherwise, a normal escape
+                            let (c, n) = char_lit(&lit[i..]);
+                            for _ in 0..n - 1 { // we don't need to move past the first \
+                                chars.next();
+                            }
+                            res.push(c);
+                        }
+                    },
+                    '\r' => {
+                        let ch = chars.peek().unwrap_or_else(|| {
+                            panic!("{}", error(i))
+                        }).1;
+
+                        if ch != '\n' {
+                            panic!("lexer accepted bare CR");
+                        }
+                        chars.next();
+                        res.push('\n');
+                    }
+                    c => res.push(c),
+                }
+            },
+            None => break
+        }
+    }
+
+    res.shrink_to_fit(); // probably not going to do anything, unless there was an escape.
+    res
 }
 
 #[cfg(test)]

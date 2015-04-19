@@ -200,9 +200,6 @@
 #![crate_name = "config"]
 #![crate_type = "lib"]
 #![warn(missing_docs)]
-#![feature(rustc_private)]
-
-extern crate syntax;
 
 #[macro_use]
 extern crate nom;
