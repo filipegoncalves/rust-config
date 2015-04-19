@@ -1,6 +1,7 @@
 
 
 use std::str::from_utf8;
+use std::str::FromStr;
 
 use types::{SettingsList, Setting, Value, ScalarValue, ArrayValue, ListValue, Config};
 use syntax::parse;
@@ -371,7 +372,7 @@ named!(flt_exponent<&[u8], (&str, &str)>,
 // Parser to match Floating64 and Floating32 scalar values
 // [+-]?([0-9]+\.[0-9]* | \.[0-9]+)([eE][+-]?[0-9]+)?L?
 
-named!(flt32_scalar_value<&[u8], ScalarValue>,
+named!(flt32_scalar_value_tentative<&[u8], Result<f32, <f32 as FromStr>::Err> >,
        chain!(
            s: map_res!(alt!(tag!("+") | tag!("-")), from_utf8)? ~
            b: flt_base ~
@@ -381,11 +382,10 @@ named!(flt32_scalar_value<&[u8], ScalarValue>,
                let (exp_sign, exp_val) = e.unwrap_or(("+", "0"));
                // Rust's parse::<f32>() and f64 do not accept a leading '+'
                let sign = if s.unwrap_or("+") == "+" { "" } else { "-" };
-               ScalarValue::Floating32(
-                   (&format!("{}{}.{}e{}{}", sign, base_bef, base_after,
-                             exp_sign, exp_val)[..]).parse::<f32>().unwrap())}));
+               (&format!("{}{}.{}e{}{}", sign, base_bef, base_after,
+                         exp_sign, exp_val)[..]).parse::<f32>()}));
 
-named!(flt64_scalar_value<&[u8], ScalarValue>,
+named!(flt64_scalar_value_tentative<&[u8], Result<f64, <f64 as FromStr>::Err> >,
        chain!(
            s: map_res!(alt!(tag!("+") | tag!("-")), from_utf8)? ~
            b: flt_base ~
@@ -396,9 +396,20 @@ named!(flt64_scalar_value<&[u8], ScalarValue>,
                let (exp_sign, exp_val) = e.unwrap_or(("+", "0"));
                // Rust's parse::<f32>() and f64 do not accept a leading '+'
                let sign = if s.unwrap_or("+") == "+" { "" } else { "-" };
-               ScalarValue::Floating64(
-                   (&format!("{}{}.{}e{}{}", sign, base_bef, base_after,
-                             exp_sign, exp_val)[..]).parse::<f64>().unwrap())}));
+               (&format!("{}{}.{}e{}{}", sign, base_bef, base_after,
+                         exp_sign, exp_val)[..]).parse::<f64>()}));
+
+named!(flt32_scalar_value<&[u8], ScalarValue>,
+       map_res!(flt32_scalar_value_tentative,
+                |r: Result<f32, <f32 as FromStr>::Err>| {
+                    r.map(|v| ScalarValue::Floating32(v))
+                }));
+
+named!(flt64_scalar_value<&[u8], ScalarValue>,
+       map_res!(flt64_scalar_value_tentative,
+                |r: Result<f64, <f64 as FromStr>::Err>| {
+                    r.map(|v| ScalarValue::Floating64(v))
+                }));
 
 named!(flt_scalar_value<&[u8], ScalarValue>,
        alt!(flt64_scalar_value | flt32_scalar_value));
