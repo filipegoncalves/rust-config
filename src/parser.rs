@@ -164,7 +164,7 @@ pub fn parse(config: &str) -> Result<Config, ParseError> {
     // TODO Descriptive errors
     match conf(&config.as_bytes()[..]) {
         Done(_, c) => Ok(c),
-        _                 => Err(0)
+        _          => Err(0)
     }
 }
 
