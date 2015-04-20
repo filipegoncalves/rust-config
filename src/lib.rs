@@ -1,7 +1,7 @@
 //! A library to parse and load configuration files.
 //!
 //! This library parses and loads configuration files in much the same way as C/C++'s
-//! [libconfig](http://www.hyperrealm.com/libconfig/). At this time, It can only read and load
+//! [libconfig](http://www.hyperrealm.com/libconfig/). At this time, it can only read and load
 //! configurations, but future plans include a much richer user API to allow other forms of
 //! interaction, such as manipulating values, writing the current configuration to a file, etc.
 //!
@@ -190,7 +190,7 @@
 //! comment -> single_line_comment
 //!          | multi_line_comment
 //!
-//! single_line_comment -> ("//"|"#")[^\n]*"\n"
+//! single_line_comment -> ("//"|"#")[^\n]*"\n"?
 //!
 //! multi_line_comment -> "/*"([^*]|"*"[^/])*"*/"
 //!
