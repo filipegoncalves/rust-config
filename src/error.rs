@@ -1,5 +1,6 @@
 //! Errors that can occur while parsing a configuration
 
+use std::fmt;
 use std::io::Error as IoError;
 use parser::ParseError;
 
@@ -24,20 +25,20 @@ pub enum ConfigErrorKind {
     ParseError
 }
 
-/// Converts an I/O Error into a `ConfigError`
-pub fn from_io_err(err: IoError) -> ConfigError {
+fn mk_error<E: fmt::Display>(kind: ConfigErrorKind, desc: &'static str, err: E) -> ConfigError {
     ConfigError {
-        kind: ConfigErrorKind::IoError,
-        desc: "An I/O error has occurred",
+        kind: kind,
+        desc: desc,
         detail: Some(format!("{}", err))
     }
 }
 
+/// Converts an I/O Error into a `ConfigError`
+pub fn from_io_err(err: IoError) -> ConfigError {
+    mk_error(ConfigErrorKind::IoError, "An I/O error has occurred", err)
+}
+
 /// Converts a `ParseError` into a `ConfigError`
 pub fn from_parse_err(err: ParseError) -> ConfigError {
-    ConfigError {
-        kind: ConfigErrorKind::ParseError,
-        desc: "Syntax error",
-        detail: Some(format!("{}", err))
-    }
+    mk_error(ConfigErrorKind::ParseError, "Syntax error", err)
 }
