@@ -1,5 +1,6 @@
 //! Errors that can occur while parsing a configuration
 
+use std::error::Error;
 use std::fmt;
 use std::io::Error as IoError;
 use parser::ParseError;
@@ -12,7 +13,9 @@ pub struct ConfigError {
     /// A descriptive message about the error
     pub desc: &'static str,
     /// Error details, if available
-    pub detail: Option<String>
+    pub detail: Option<String>,
+
+    err_desc: String
 }
 
 /// Possible error kinds
@@ -26,10 +29,13 @@ pub enum ConfigErrorKind {
 }
 
 fn mk_error<E: fmt::Display>(kind: ConfigErrorKind, desc: &'static str, err: E) -> ConfigError {
+    let err_desc = format!("{:?} {}: {}", kind, desc, err);
     ConfigError {
         kind: kind,
         desc: desc,
-        detail: Some(format!("{}", err))
+        detail: Some(format!("{}", err)),
+
+        err_desc: err_desc
     }
 }
 
@@ -41,4 +47,17 @@ pub fn from_io_err(err: IoError) -> ConfigError {
 /// Converts a `ParseError` into a `ConfigError`
 pub fn from_parse_err(err: ParseError) -> ConfigError {
     mk_error(ConfigErrorKind::ParseError, "Syntax error", err)
+}
+
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        try!(write!(f, "{}", self.description()));
+        Ok(())
+    }
+}
+
+impl Error for ConfigError {
+    fn description(&self) -> &str {
+        &self.err_desc[..]
+    }
 }
