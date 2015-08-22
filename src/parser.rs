@@ -154,7 +154,8 @@ use std::iter;
 use types::{SettingsList, Setting, Value, ScalarValue, ArrayValue, ListValue, Config};
 
 use nom::{alpha, alphanumeric, digit, multispace, not_line_ending};
-use nom::{IResult, Needed};
+use nom::IResult;
+use nom::Err::Code;
 use nom::IResult::*;
 
 pub type ParseError = u32;
@@ -582,7 +583,7 @@ fn eof(input:&[u8]) -> IResult<&[u8], &[u8]> {
     if input.len() == 0 {
         Done(input, input)
     } else {
-        Error(0)
+        Error(Code(0))
     }
 }
 
@@ -741,6 +742,8 @@ mod test {
     use super::{value, array, group, list};
     use super::conf;
 
+    use nom::ErrorCode;
+    use nom::Err::{Code, Position};
     use nom::IResult::*;
 
     use types::{Setting, SettingsList, Value, ScalarValue, Config};
@@ -785,14 +788,14 @@ mod test {
     fn setting_name_bad_num_prefix() {
         let a_setting = &b"12_xxx"[..];
         let res = setting_name(a_setting);
-        assert_eq!(res, Error(0));
+        assert_eq!(res, Error(Position(ErrorCode::Alpha as u32, b"12_xxx")));
     }
 
     #[test]
     fn setting_name_bad_symbol_prefix() {
         let a_setting = &b"__not_allowed"[..];
         let res = setting_name(a_setting);
-        assert_eq!(res, Error(0));
+        assert_eq!(res, Error(Position(ErrorCode::Alpha as u32, b"__not_allowed")));
     }
 
     #[test]
@@ -932,14 +935,14 @@ mod test {
     fn bad_escape_sequence1() {
         let bad_escaped_seq = &b"\\q"[..];
         let res = escaped_seq(bad_escaped_seq);
-        assert_eq!(res, Error(1));
+        assert_eq!(res, Error(Position(ErrorCode::Alt as u32, b"\\q")));
     }
 
     #[test]
     fn bad_escape_sequence2() {
         let bad_escape_seq = &b"aaa"[..];
         let res = escaped_seq(bad_escape_seq);
-        assert_eq!(res, Error(1));
+        assert_eq!(res, Error(Position(ErrorCode::Alt as u32, b"aaa")));
     }
 
     #[test]
@@ -1052,7 +1055,7 @@ mod test {
     fn end_of_line1() {
         let input = &b"a test\n"[..];
         let res = eol(input);
-        assert_eq!(res, Error(1));
+        assert_eq!(res, Error(Position(ErrorCode::Alt as u32, b"a test\n")));
     }
 
     #[test]
@@ -1080,7 +1083,7 @@ mod test {
     fn one_line_comment_bad() {
         let input = &b"not a comment // see?"[..];
         let res = comment_one_line(input);
-        assert_eq!(res, Error(1));
+        assert_eq!(res, Error(Position(ErrorCode::Alt as u32, b"not a comment // see?")));
     }
 
     #[test]
@@ -1115,7 +1118,7 @@ mod test {
     fn comment_blk_bad() {
         let input = &b"not a comment /* see?"[..];
         let res = comment_block(input);
-        assert_eq!(res, Error(0));
+        assert_eq!(res, Error(Position(ErrorCode::Tag as u32, b"not a comment /* see?")));
     }
 
     #[test]
@@ -1215,7 +1218,7 @@ mod test {
     fn flt_base_w_digits_before_dot() {
         let input = &b".4435"[..];
         let res = flt_base_w_digits_bef_dot(input);
-        assert_eq!(res, Error(0));
+        assert_eq!(res, Error(Position(ErrorCode::Digit as u32, b".4435")));
     }
 
     #[test]
@@ -1257,7 +1260,7 @@ mod test {
     fn flt_base_no_digits_before_dot() {
         let input = &b"0.0"[..];
         let res = flt_base_no_digits_bef_dot(input);
-        assert_eq!(res, Error(0));
+        assert_eq!(res, Error(Position(ErrorCode::Tag as u32, b"0.0")));
     }
 
     #[test]
@@ -1271,7 +1274,7 @@ mod test {
     fn flt_base_no_digits_before_dot3() {
         let input = &b".\n"[..];
         let res = flt_base_no_digits_bef_dot(input);
-        assert_eq!(res, Error(0));
+        assert_eq!(res, Error(Position(ErrorCode::Digit as u32, b"\n" /* dot is consumed */)));
     }
 
     #[test]
@@ -1334,7 +1337,7 @@ mod test {
     fn flt_exponent_value() {
         let input = &b"eee"[..];
         let res = flt_exponent(input);
-        assert_eq!(res, Error(0));
+        assert_eq!(res, Error(Position(ErrorCode::Digit as u32, b"ee" /* one e consumed */)));
     }
 
     #[test]
@@ -1635,7 +1638,7 @@ mod test {
     fn integer_scalar_value() {
         let input = &b"-------"[..];
         let res = int_scalar_value(input);
-        assert_eq!(res, Error(1));
+        assert_eq!(res, Error(Position(ErrorCode::Alt as u32, b"-------")));
     }
 
     #[test]
@@ -1932,14 +1935,14 @@ mod test {
     fn bad_array() {
         let input = &b"[true, \"a\", 14, 19, 5.0e1];\n"[..];
         let res = array(input);
-        assert_eq!(res, Error(1));
+        assert_eq!(res, Error(Position(ErrorCode::Alt as u32, b"[true, \"a\", 14, 19, 5.0e1];\n")));
     }
 
     #[test]
     fn bad_array2() {
         let input = &b"[\"a bad array\", 12, 3.0e-1, true];\n"[..];
         let res = array(input);
-        assert_eq!(res, Error(1));
+        assert_eq!(res, Error(Position(ErrorCode::Alt as u32, b"[\"a bad array\", 12, 3.0e-1, true];\n")));
     }
 
     #[test]
@@ -2561,19 +2564,19 @@ mod test {
     #[test]
     fn conf_simple_bad_array() {
         let parsed = conf(&b"bad_array = [\"a bad array\", 12, 3.0e-1, true];\n"[..]);
-        assert_eq!(parsed, Error(0));
+        assert_eq!(parsed, Error(Code(0)));
     }
 
     #[test]
     fn conf_bad_array() {
         let parsed = conf(&b"bad_array = [\"a bad array\", (\"array\", 5, 4, 2)];\n"[..]);
-        assert_eq!(parsed, Error(0));
+        assert_eq!(parsed, Error(Code(0)));
     }
 
     #[test]
     fn conf_bad_array_not_scalar() {
         let parsed = conf(&b"bad_array = [(1, 2, 3), (4, 5, 6)];\n"[..]);
-        assert_eq!(parsed, Error(0));
+        assert_eq!(parsed, Error(Code(0)));
     }
 
     #[test]
