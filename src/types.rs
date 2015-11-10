@@ -1,7 +1,9 @@
 //! Internal types used to represent a configuration and corresponding primitives to browse it
 
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::string::ToString;
+use ::error::ConfigError;
 
 /// The top-level `Config` type that represents a configuration
 #[derive(PartialEq)]
@@ -273,6 +275,18 @@ impl Config {
     /// then the user-provided default value is returned.
     pub fn lookup_str_or<'a>(&'a self, path: &str, default: &'a str) -> &'a str {
         self.lookup_str(path).unwrap_or(default)
+    }
+}
+
+// Implement `FromStr` for `Config` so it can be constructed using `parse()` method
+// on the string slice.
+impl FromStr for Config {
+    type Err = ConfigError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use ::reader;
+
+        reader::from_str(s)
     }
 }
 
@@ -717,5 +731,12 @@ mod test {
 
         value = ScalarValue::Str("this is a string".to_string());
         assert_eq!(value.to_string(), "this is a string");
+    }
+
+    #[test]
+    fn parse_config_from_str_slice() {
+        let config: Config = "answer=42;".parse().unwrap();
+        assert!(config.lookup_integer32("answer").is_some());
+        assert_eq!(config.lookup_integer32("answer").unwrap().to_string(), "42".to_string());
     }
 }
