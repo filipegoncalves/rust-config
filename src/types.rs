@@ -1,6 +1,9 @@
 //! Internal types used to represent a configuration and corresponding primitives to browse it
 
 use std::collections::HashMap;
+use std::str::FromStr;
+use std::string::ToString;
+use ::error::ConfigError;
 
 /// The top-level `Config` type that represents a configuration
 #[derive(PartialEq)]
@@ -275,6 +278,18 @@ impl Config {
     }
 }
 
+// Implement `FromStr` for `Config` so it can be constructed using `parse()` method
+// on the string slice.
+impl FromStr for Config {
+    type Err = ConfigError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use ::reader;
+
+        reader::from_str(s)
+    }
+}
+
 impl Setting {
     /// Creates a new setting with a given name and value
     /// # Examples 
@@ -333,6 +348,20 @@ impl Setting {
     ///
     pub fn new(sname: String, val: Value) -> Setting {
         Setting { name: sname, value: val }
+    }
+}
+
+// Implement to_string() method for scalar value
+impl ToString for ScalarValue {
+    fn to_string(&self) -> String {
+        match self {
+            &ScalarValue::Boolean(ref value) => value.to_string(),
+            &ScalarValue::Integer32(ref value) => value.to_string(),
+            &ScalarValue::Integer64(ref value) => value.to_string(),
+            &ScalarValue::Floating32(ref value) => value.to_string(),
+            &ScalarValue::Floating64(ref value) => value.to_string(),
+            &ScalarValue::Str(ref value) => value.clone(),
+        }
     }
 }
 
@@ -681,5 +710,33 @@ mod test {
 
         let value1 = my_conf.lookup_str("my_array.[1]");
         assert!(value1.is_none());
+    }
+
+    #[test]
+    fn scalar_value_to_string() {
+        let mut value = ScalarValue::Boolean(true);
+        assert_eq!(value.to_string(), "true");
+
+        value = ScalarValue::Integer32(32i32);
+        assert_eq!(value.to_string(), "32");
+
+        value = ScalarValue::Integer64(-64i64);
+        assert_eq!(value.to_string(), "-64");
+
+        value = ScalarValue::Floating32(3f32);
+        assert!(value.to_string().starts_with("3"));
+
+        value = ScalarValue::Floating64(99f64);
+        assert!(value.to_string().starts_with("99"));
+
+        value = ScalarValue::Str("this is a string".to_string());
+        assert_eq!(value.to_string(), "this is a string");
+    }
+
+    #[test]
+    fn parse_config_from_str_slice() {
+        let config: Config = "answer=42;".parse().unwrap();
+        assert!(config.lookup_integer32("answer").is_some());
+        assert_eq!(config.lookup_integer32("answer").unwrap().to_string(), "42".to_string());
     }
 }
