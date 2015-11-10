@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["error","Errors that can occur while parsing a configuration"],["reader","Reader types to parse a configuration."],["types","Internal types used to represent a configuration and corresponding primitives to browse it"]]});

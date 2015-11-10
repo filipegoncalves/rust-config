@@ -1,0 +1,1 @@
+initSidebarItems({"trait":[["FlatMap","flat_map is a method of IResult<R,S>, takes a function Fn(S) -> IResult<S,T>, and returns a IResult<S,T>"],["FlatMapOpt","map_opt and map_res are used to combine common functions with parsers"],["Functor","map applies a parser function directly to the output of another parser function"]]});

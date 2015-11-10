@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `config` crate.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, config">
+
+    <title>config - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'></p><script>window.sidebarCurrent = {name: 'config', ty: 'mod', relpath: '../'};</script>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>config</a><wbr></span><span class='out-of-band'><a href='stability.html'>[stability]</a> <span id='render-detail'>
+            <a id="collapse-all" href="#">[-]</a>&nbsp;<a id="expand-all" href="#">[+]</a>
+        </span><a id='src-0' href='../src/config/lib.rs.html#1-211'>[src]</a></span></h1>
+<div class='docblock'><p>A library to parse and load configuration files.</p>
+
+<p>This library parses and loads configuration files in much the same way as C/C++&#39;s
+ <a href="http://www.hyperrealm.com/libconfig/">libconfig</a>. At this time, It can only read and load
+ configurations, but future plans include a much richer user API to allow other forms of
+ interaction, such as manipulating values, writing the current configuration to a file, etc.</p>
+
+<h1 id="getting-started" class='section-header'><a
+                           href="#getting-started">Getting started</a></h1>
+<p>A configuration file consists of a group of settings. A setting is a key/value pair, where the
+ key is a string of the form <code>[a-zA-Z][-a-zA-Z0-9_]*</code>, and the value is anything represented by
+ <code>types::Value</code>. In a configuration file, setting/value pairs are written as
+ <code>setting_name = value;</code>. Possible values include primitive integer and floating point types,
+ strings, arrays, lists, etc.</p>
+
+<p>The library provides a bunch of methods to read the configuration data in the <code>reader</code> module.
+ The possibilities include reading from a string, from a file, or from anything that implements
+ the <code>Read</code> trait.</p>
+
+<p>As of now, every reader will first attempt to read the whole configuration into memory,
+ and only begins parsing once everything was read.</p>
+
+<p>In case of error, the parser returns a <code>config::error</code>.
+ On success, the parser returns a <code>Config</code>, which can then be used to browse the loaded data.</p>
+
+<p>Browsing is typically done with the <code>lookup_*</code> methods implemented by <code>Config</code>. The <code>lookup</code>
+ methods work with <em>paths</em>. Essentially, a path unambiguously describes the location of
+ a setting.</p>
+
+<p>For example, consider this input configuration file:</p>
+<pre id='rust-example-rendered' class='rust '>
+ <span class='ident'>title</span> <span class='op'>=</span> <span class='string'>&quot;My HTTP server&quot;</span>;
+ <span class='ident'>listen_ports</span> <span class='op'>=</span> [ <span class='number'>80</span>, <span class='number'>443</span> ];
+ <span class='ident'>misc</span> <span class='op'>=</span> {
+     <span class='ident'>owner</span> <span class='op'>=</span> <span class='string'>&quot;Chuck Norris&quot;</span>;
+     <span class='ident'>location</span> <span class='op'>=</span> <span class='string'>&quot;CA&quot;</span>;
+     <span class='ident'>contact</span> <span class='op'>=</span> {
+         <span class='ident'>phone</span> <span class='op'>=</span> <span class='string'>&quot;415-256-9999&quot;</span>;
+         <span class='comment'>// This is an array. Arrays start with `[` and end with `]`</span>
+         <span class='comment'>// Arrays are homogeneous and can only hold scalar data types.</span>
+         <span class='comment'>// See types::ScalarValue for further information</span>
+         <span class='ident'>emails</span> <span class='op'>=</span> [<span class='string'>&quot;chuck@norris.com&quot;</span>, <span class='string'>&quot;chuck.norris@gmail.com&quot;</span>];
+     };
+ };
+</pre>
+
+<p>At the top level, we have 3 settings: <code>title</code>, <code>listen_ports</code> and <code>misc</code>. <code>misc</code> is itself a
+ group of settings. Each value in this configuration is reachable by a unique path of settings
+ to follow. Each setting in a path is separated by <code>.</code></p>
+
+<p><strong>Example</strong>: The path <code>misc.contact.phone</code> identifies the setting with value <code>415-256-9999</code>.</p>
+
+<p>Array and list types are indexed using <code>[i]</code> in a path.</p>
+
+<p><strong>Example</strong>: The path <code>listen_ports.[1]</code> identifies the setting with value <code>443</code>.</p>
+
+<p><strong>Example</strong>: The path <code>misc.contact.emails.[0]</code> identifies the setting with value
+ <code>chuck@norris.com</code></p>
+
+<p>Lists, as opposed to arrays, are heterogeneous and can store any data type, including other
+ lists. Here&#39;s a setting consisting of a heterogeneous list:</p>
+<pre id='rust-example-rendered' class='rust '>
+ <span class='comment'>// This is a list. Lists start with `(` and end with `)`</span>
+ <span class='comment'>// Lists are heterogeneous and can store any data type, including other lists</span>
+ <span class='ident'>a_setting</span> <span class='op'>=</span> (<span class='string'>&quot;a string&quot;</span>, <span class='comment'>// The first element is a string</span>
+              ((<span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>)), <span class='comment'>// The 2nd element is a list storing a list of 3 integers</span>
+              <span class='ident'>misc</span> <span class='op'>=</span> { <span class='ident'>x</span> <span class='op'>=</span> <span class='number'>4</span>; <span class='ident'>y</span> <span class='op'>=</span> <span class='number'>3</span>; } <span class='comment'>// 3rd element: a group</span>
+             );
+</pre>
+
+<p>Here are some valid paths for this example:</p>
+
+<p><code>a_setting.[0]</code> - returns the string <code>a string</code></p>
+
+<p><code>a_setting.[1].[0].[2]</code> - returns the integer <code>3</code></p>
+
+<p><code>a_setting.[2].misc.x</code> - returns the integer <code>4</code></p>
+
+<p>Adjacent string literals separated by whitespace, newlines and / or comments are automatically
+ concatenated.</p>
+
+<p><strong>Example</strong>:</p>
+<pre id='rust-example-rendered' class='rust '>
+ <span class='string'>&quot;a&quot;</span><span class='comment'>/* a comment */</span><span class='string'>&quot; string&quot;</span>    <span class='string'>&quot; liter&quot;</span>
+
+ <span class='comment'>// This is a commment</span>
+
+    <span class='string'>&quot;al&quot;</span>
+</pre>
+
+<p>is equivalent to:</p>
+<pre id='rust-example-rendered' class='rust '>
+ <span class='string'>&quot;a string literal&quot;</span>
+</pre>
+
+<p>See the integration tests (in the <code>tests/</code> directory) for sample use cases and more complex
+ examples.</p>
+
+<h1 id="grammar" class='section-header'><a
+                           href="#grammar">Grammar</a></h1>
+<p>This section describes the configuration input format. The starting rule is <code>conf</code>.</p>
+
+<pre><code class="language-text"> conf -&gt; __ settings_list __
+
+ settings_list -&gt; // empty
+                | setting settings_list
+ setting -&gt; __ name __ (&quot;:&quot;|&quot;=&quot;) __ value __ &quot;;&quot; __
+
+ name -&gt; [a-zA-Z][-a-zA-Z0-9_]*
+
+ value -&gt; scalar_value
+        | array_value
+        | list_value
+        | group_value
+
+ scalar_value -&gt; boolean_scalar_value
+               | floating64_scalar_value
+               | floating32_scalar_value
+               | integer64_scalar_value
+               | integer32_scalar_value
+               | str_scalar_value
+
+ boolean_scalar_value -&gt; [Tt][Rr][Uu][Ee]
+                       | [Yy][Ee][Ss]
+                       | [Ff][Aa][Ll][Ss][Ee]
+                       | [Nn][Oo]
+
+ floating64_scalar_value -&gt; [+-]?([0-9]+\.[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?&quot;L&quot;
+
+ floating32_scalar_value -&gt; [+-]?([0-9]+\.[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?
+
+ integer32_scalar_value -&gt; [+-]?[0-9]+
+
+ integer64_scalar_value -&gt; [+-]?[0-9]+&quot;L&quot;
+
+ str_scalar_value -&gt; __ str_literal __
+                   | __ str_literal __ str_scalar_value
+
+ str_literal -&gt; &quot;\&quot;&quot; ([^\&quot;\\]|((&quot;\\r&quot;|&quot;\\n&quot;|&quot;\\t&quot;|&quot;\\\&quot;&quot;|&quot;\\\\&quot;)))* &quot;\&quot;&quot;
+
+ array_value -&gt; &quot;[&quot;
+                (bool_array |
+                 flt64_array | flt32_array |
+                 int64_array | int32_array |
+                 str_array)
+                &quot;]&quot;
+              | &quot;[&quot; __ &quot;]&quot;
+
+ bool_array -&gt; __ boolean_scalar_value __
+             | __ boolean_scalar_value __ &quot;,&quot; __ bool_array
+
+ flt64_array -&gt; __ floating64_scalar_value __
+              | __ floating64_scalar_value __ &quot;,&quot; __ flt64_array
+
+ flt32_array -&gt; __ floating32_scalar_value __
+              | __ floating32_scalar_value __ &quot;,&quot; __ flt32_array
+ int64_array -&gt; __ integer64_scalar_value __
+              | __ integer64_scalar_value __ &quot;,&quot; __ int64_array
+
+ int32_array -&gt; __ integer32_scalar_value __
+              | __ integer32_scalar_value __ &quot;,&quot; __ int32_array
+
+ str_array -&gt; __ str_scalar_value __
+            | __ str_scalar_value __ &quot;,&quot; __ str_array
+
+ list_value -&gt; &quot;(&quot; __ &quot;)&quot;
+             | &quot;(&quot; list_elements &quot;)&quot;
+
+ list_elements -&gt; __ value __
+                | __ value __ &quot;,&quot; __ list_elements
+
+ group_value -&gt; &quot;{&quot; settings_list &quot;}&quot;
+
+ __ -&gt; // empty
+     | whitespace __
+     | eol __
+     | comment __
+
+ whitespace -&gt; [\s\t]
+
+ eol -&gt; &quot;\r\n&quot;
+      | &quot;\n&quot;
+
+ comment -&gt; single_line_comment
+          | multi_line_comment
+
+ single_line_comment -&gt; (&quot;//&quot;|&quot;#&quot;)[^\n]*&quot;\n&quot;
+
+ multi_line_comment -&gt; &quot;/*&quot;([^*]|&quot;*&quot;[^/])*&quot;*/&quot;
+
+</code></pre>
+</div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='mod' href='error/index.html'
+                               title='config::error'>error</a></td>
+                        <td class='docblock short'><p>Errors that can occur while parsing a configuration</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='mod' href='reader/index.html'
+                               title='config::reader'>reader</a></td>
+                        <td class='docblock short'><p>Reader types to parse a configuration.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='mod' href='types/index.html'
+                               title='config::types'>types</a></td>
+                        <td class='docblock short'><p>Internal types used to represent a configuration and corresponding primitives to browse it</p>
+</td>
+                    </tr>
+                </table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "config";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script async src="../search-index.js"></script>
+</body>
+</html>

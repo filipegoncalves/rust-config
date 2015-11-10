@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["from_file","Reads a configuration from a UTF-8 file. Errors can be caused by:"],["from_str","Reads a configuration from a string slice. The only possible error that can occur is a syntax error. # Examples"],["from_stream","Reads a configuration from a generic stream. Errors can be caused by:"]]});

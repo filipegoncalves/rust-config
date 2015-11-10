@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["FileProducer","Can produce data from a file"],["MemProducer","Can parse data from an already in memory byte array"]],"trait":[["Producer","A producer implements the produce method, currently working with u8 arrays"]],"enum":[["ProducerState","Holds the data producer's current state"]]});
