@@ -360,7 +360,7 @@ named!(group<&[u8], SettingsList>,
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Boolean values parser and auxiliary parsers ~~~
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-named!(boolean_scalar_value<&[u8], ScalarValue>, alt!(bool_true_value | bool_false_value));
+named!(boolean_scalar_value<&[u8], ScalarValue>, alt!(bool_true_value | bool_false_value | bool_env_value));
 
 named!(bool_true_value<&[u8], ScalarValue>,
        alt!(chain!(
@@ -374,6 +374,11 @@ named!(bool_true_value<&[u8], ScalarValue>,
                alt!(tag!("Y") | tag!("y")) ~
                alt!(tag!("E") | tag!("e")) ~
                alt!(tag!("S") | tag!("s")),
+               || { ScalarValue::Boolean(true) } )
+            |
+            chain!(
+               alt!(tag!("O") | tag!("o")) ~
+               alt!(tag!("N") | tag!("n")),
                || { ScalarValue::Boolean(true) } )));
 
 named!(bool_false_value<&[u8], ScalarValue>,
@@ -388,12 +393,47 @@ named!(bool_false_value<&[u8], ScalarValue>,
             chain!(
                alt!(tag!("N") | tag!("n")) ~
                alt!(tag!("O") | tag!("o")),
+               || { ScalarValue::Boolean(false) } )
+            |
+            chain!(
+               alt!(tag!("O") | tag!("o")) ~
+               alt!(tag!("F") | tag!("f")) ~
+               alt!(tag!("F") | tag!("f")),
                || { ScalarValue::Boolean(false) } )));
+
+// Special boolean parser with syntax $"ENV_VAR_NAME"::bool which assumes the environment
+// variable $ENV_VAR_NAME as boolean and try to parse it. It returns true if the value is
+// 'true' or 'yes' or 'on' or '1' otherwise it returns false.
+named!(bool_env_value<&[u8], ScalarValue>,
+       chain!(
+               tag!("$") ~
+               n: string_literal ~
+               tag!(":") ~
+               tag!(":") ~
+               alt!(tag!("B") | tag!("b")) ~
+               alt!(tag!("O") | tag!("o")) ~
+               alt!(tag!("O") | tag!("o")) ~
+               alt!(tag!("L") | tag!("l")),
+               || {
+                  use std::env;
+                  if let Ok(value) = env::var(n) {
+                    let v = value.to_lowercase();
+                    if v == "true" || v == "yes" || v == "on" || v == "1" {
+                      ScalarValue::Boolean(true)
+                    } else {
+                      ScalarValue::Boolean(false)
+                    }
+                  } else {
+                    ScalarValue::Boolean(false)
+                  }
+                } ));
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ String parser and auxiliary parsers ~~~
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-named!(str_scalar_value<&[u8], ScalarValue>,
+named!(str_scalar_value<&[u8], ScalarValue>, alt!(string_scalar_value | string_env_value));
+
+named!(string_scalar_value<&[u8], ScalarValue>,
        chain!(
            strs: many1!(chain!(
                         s: string_literal ~
@@ -420,11 +460,31 @@ named!(string_literal<&[u8], String>,
                                                accum
                                            })[..])}));
 
+// Special string parser with syntax $"ENV_VAR_NAME"::str which returns the environment
+// variable $ENV_VAR_NAME without any modifications.
+named!(string_env_value<&[u8], ScalarValue>,
+       chain!(
+               tag!("$") ~
+               n: string_literal ~
+               tag!(":") ~
+               tag!(":") ~
+               alt!(tag!("S") | tag!("s")) ~
+               alt!(tag!("T") | tag!("t")) ~
+               alt!(tag!("R") | tag!("r")),
+               || {
+                  use std::env;
+                  if let Ok(value) = env::var(n) {
+                    ScalarValue::Str(value)
+                  } else {
+                    ScalarValue::Str("".to_string())
+                  }
+                } ));
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Integer values parser and auxiliary parsers ~~~
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 named!(int_scalar_value<&[u8], ScalarValue>,
-       alt!(int64_scalar_value | int32_scalar_value));
+       alt!(int64_scalar_value | int32_scalar_value | int64_env_value | int32_env_value));
 
 // Tentative parser to match Integer32 scalar values
 // Returns an `Err` if `parse::<i32>()` fails
@@ -465,11 +525,61 @@ named!(int64_scalar_value<&[u8], ScalarValue>,
                     r.map(|v| ScalarValue::Integer64(v))
                 }));
 
+// Special int32 parser with syntax $"ENV_VAR_NAME"::i32 which assumes the environment
+// variable $ENV_VAR_NAME as Integer32 and try to parse it. On parsing error it returns zero.
+// We do a little hack here to avoid double codding; we call int32_scalar_value directly
+// on the value of the environment variable and iterpret the return value.
+named!(int32_env_value<&[u8], ScalarValue>,
+       chain!(
+             tag!("$") ~
+             n: string_literal ~
+             tag!(":") ~
+             tag!(":") ~
+             alt!(tag!("I") | tag!("i")) ~
+             tag!("32"),
+             || {
+                use std::env;
+                if let Ok(value) = env::var(n) {
+                  if let IResult::Done(_, output) = int32_scalar_value(value.as_bytes()) {
+                    output
+                  } else {
+                    ScalarValue::Integer32(0i32)
+                  }
+                } else {
+                    ScalarValue::Integer32(0i32)
+                }
+              } ));
+
+// Special int64 parser with syntax $"ENV_VAR_NAME"::i64 which assumes the environment
+// variable $ENV_VAR_NAME as Integer64 and try to parse it. On parsing error it returns zero.
+// We do a little hack here to avoid double codding; we call int64_scalar_value directly
+// on the value of the environment variable and iterpret the return value.
+named!(int64_env_value<&[u8], ScalarValue>,
+       chain!(
+             tag!("$") ~
+             n: string_literal ~
+             tag!(":") ~
+             tag!(":") ~
+             alt!(tag!("I") | tag!("i")) ~
+             tag!("64"),
+             || {
+                use std::env;
+                if let Ok(value) = env::var(n) {
+                  if let IResult::Done(_, output) = int64_scalar_value(value.as_bytes()) {
+                    output
+                  } else {
+                    ScalarValue::Integer64(0i64)
+                  }
+                } else {
+                    ScalarValue::Integer64(0i64)
+                }
+              } ));
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Floating point values parser and auxiliary parsers ~~~
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 named!(flt_scalar_value<&[u8], ScalarValue>,
-       alt!(flt64_scalar_value | flt32_scalar_value));
+       alt!(flt64_scalar_value | flt32_scalar_value | flt64_env_value | flt32_env_value));
 
 // Auxiliary parser for floats with digits before .
 // [0-9]+\.[0-9]*
@@ -548,6 +658,56 @@ named!(flt64_scalar_value<&[u8], ScalarValue>,
                 |r: Result<f64, <f64 as FromStr>::Err>| {
                     r.map(|v| ScalarValue::Floating64(v))
                 }));
+
+// Special f32 parser with syntax $"ENV_VAR_NAME"::f32 which assumes the environment
+// variable $ENV_VAR_NAME as Floating32 and try to parse it. On parsing error it returns zero.
+// We do a little hack here to avoid double codding; we call flt32_scalar_value directly 
+// on the value of the environment variable and iterpret the return value.
+named!(flt32_env_value<&[u8], ScalarValue>,
+       chain!(
+             tag!("$") ~
+             n: string_literal ~
+             tag!(":") ~
+             tag!(":") ~
+             alt!(tag!("F") | tag!("f")) ~
+             tag!("32"),
+             || {
+                use std::env;
+                if let Ok(value) = env::var(n) {
+                  if let IResult::Done(_, output) = flt32_scalar_value(value.as_bytes()) {
+                    output
+                  } else {
+                    ScalarValue::Floating32(0f32)
+                  }
+                } else {
+                    ScalarValue::Floating32(0f32)
+                }
+              } ));
+
+// Special f64 parser with syntax $"ENV_VAR_NAME"::f64 which assumes the environment
+// variable $ENV_VAR_NAME as Floating64 and try to parse it. On parsing error it returns zero.
+// We do a little hack here to avoid double codding; we call flt64_scalar_value directly
+// on the value of the environment variable and iterpret the return value.
+named!(flt64_env_value<&[u8], ScalarValue>,
+       chain!(
+             tag!("$") ~
+             n: string_literal ~
+             tag!(":") ~
+             tag!(":") ~
+             alt!(tag!("F") | tag!("f")) ~
+             tag!("64"),
+             || {
+                use std::env;
+                if let Ok(value) = env::var(n) {
+                  if let IResult::Done(_, output) = flt64_scalar_value(value.as_bytes()) {
+                    output
+                  } else {
+                    ScalarValue::Floating64(0f64)
+                  }
+                } else {
+                    ScalarValue::Floating64(0f64)
+                }
+              } ));
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Parser to ignore useless stuff: comments, new lines, ... ~~~
@@ -3408,5 +3568,33 @@ mod test {
                                      Value::Group(misc_group)));
 
         assert_eq!(parsed, Done(&b""[..], Config::new(expected)));
+    }
+
+    #[test]
+    #[ignore]
+    fn env_scalar_values() {
+        let input = &b"$\"TEST_BOOL\"::bool;\n"[..];
+        let res = boolean_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Boolean(true)));
+
+        let input = &b"$\"TEST_BOOL\"::str;\n"[..];
+        let res = str_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Str("Yes".to_string())));
+
+        let input = &b"$\"TEST_INT\"::i32;\n"[..];
+        let res = int_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Integer32(42i32)));
+
+        let input = &b"$\"TEST_INT64\"::i64;\n"[..];
+        let res = int_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Integer64(42i64)));
+
+        let input = &b"$\"TEST_FLT\"::f32;\n"[..];
+        let res = flt_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Floating32(3.1415f32)));
+
+        let input = &b"$\"TEST_FLT64\"::f64;\n"[..];
+        let res = flt_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Floating64(3.1415f64)));
     }
 }
