@@ -103,7 +103,7 @@
 //!# Environment variables
 //!
 //! The crate has an ability to inject environment variables into the configuration file. That
-//! becomes possible using special symtax:  
+//! becomes possible using special syntax:  
 //!
 //!  * $"SOME_ENV_VAR_NAME"::bool for `ScalarValue::Boolean`  
 //!  * $"SOME_ENV_VAR_NAME"::str for `ScalarValue::Str`  
