@@ -100,6 +100,28 @@
 //! See the integration tests (in the `tests/` directory) for sample use cases and more complex
 //! examples.
 //!
+//!# Environment variables
+//!
+//! The crate has an ability to inject environment variables into the configuration file. That
+//! becomes possible using special symtax:  
+//!
+//!  * $"SOME_ENV_VAR_NAME"::bool for `ScalarValue::Boolean`  
+//!  * $"SOME_ENV_VAR_NAME"::str for `ScalarValue::Str`  
+//!  * $"SOME_ENV_VAR_NAME"::i32 for `ScalarValue::Integer32`  
+//!  * $"SOME_ENV_VAR_NAME"::i64 for `ScalarValue::Integer64`  
+//!  * $"SOME_ENV_VAR_NAME"::f32 for `ScalarValue::Floating32`  
+//!  * $"SOME_ENV_VAR_NAME"::f64 for `ScalarValue::Floating64`  
+//!
+//!
+//! **Example**:
+//!
+//! ```ignore
+//! log = {
+//!       // Inject (use) the value of the environment variable LOG_LEVEL
+//!       level = $"LOG_LEVEL"::str;
+//! }
+//! ```
+//!
 //!# Grammar
 //!
 //! This section describes the configuration input format. The starting rule is `conf`.
