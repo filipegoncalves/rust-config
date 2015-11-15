@@ -3569,15 +3569,24 @@ mod test {
 
         // Test float
         let input = &b"$\"TEST_FLT32\"::flt;\n"[..];
-        let res = flt_scalar_value(input);
-        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Floating32(3.1415f32)));
+        if let Done(_, ScalarValue::Floating32(value)) = flt_scalar_value(input) {
+          assert!(value > 3.1414 && value < 3.1416);
+        } else {
+          panic!("Failed to read env f32");
+        }
 
         let input = &b"$\"TEST_FLT64\"::flt;\n"[..];
-        let res = flt_scalar_value(input);
-        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Floating64(-3.1415f64)));
+        if let Done(_, ScalarValue::Floating64(value)) = flt_scalar_value(input) {
+          assert!(value > -3.1416 && value < -3.1414);
+        } else {
+          panic!("Failed to read env f64");
+        }
 
         let input = &b"$\"TEST_FLT_NOT_FOUND\"::flt;\n"[..];
-        let res = flt_scalar_value(input);
-        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Floating32(0f32)));
+        if let Done(_, ScalarValue::Floating32(value)) = flt_scalar_value(input) {
+          assert!(value > -0.0001 && value < 0.0001);
+        } else {
+          panic!("Failed to read fake env float");
+        }
     }
 }
