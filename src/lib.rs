@@ -100,6 +100,36 @@
 //! See the integration tests (in the `tests/` directory) for sample use cases and more complex
 //! examples.
 //!
+//!# Environment variables
+//!
+//! The crate has an ability to inject environment variables into the configuration file. That
+//! becomes possible using special syntax:  
+//!
+//!  * `$"SOME_ENV_VAR_NAME"::str` to inject the environment variables `SOME_ENV_VAR_NAME` as the string value.
+//!    No additiocal changes are made ot the value.
+//!  * `$"SOME_ENV_VAR_NAME"::bool` to inject the environment variables `SOME_ENV_VAR_NAME` as the boolean value.
+//!    The value `true` or `yes` or `on` or `1` are converted into `true` otherwise into `false`.  
+//!  * `$"SOME_ENV_VAR_NAME"::int` to inject the environment variables `SOME_ENV_VAR_NAME` as the integer value.
+//!    The successfully parsed value is injected as `i32` or `i64`, depending on the format, otherwise `0i32` is injected.  
+//!  * `$"SOME_ENV_VAR_NAME"::flt` to inject the environment variables `SOME_ENV_VAR_NAME` as the floating value.
+//!    The successfully parsed value is injected as `f32` or `f64`, depending on the format, otherwise `0f32` is injected.  
+//!
+//!
+//! **Example**:
+//!
+//! ```ignore
+//! #!/bin/sh
+//! export LOG_LEVEL=debug
+//! ```
+//! 
+//! ```ignore
+//! // Configuration file
+//! log = {
+//!       // Inject (use) the value of the environment variable LOG_LEVEL
+//!       level = $"LOG_LEVEL"::str;
+//! }
+//! ```
+//!
 //!# Grammar
 //!
 //! This section describes the configuration input format. The starting rule is `conf`.
