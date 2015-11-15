@@ -402,8 +402,9 @@ named!(bool_false_value<&[u8], ScalarValue>,
                || { ScalarValue::Boolean(false) } )));
 
 // Special boolean parser with syntax $"ENV_VAR_NAME"::bool which assumes the environment
-// variable $ENV_VAR_NAME as boolean and try to parse it. It returns true if the value is
-// 'true' or 'yes' or 'on' or '1' otherwise it returns false.
+// variable $ENV_VAR_NAME as boolean and try to parse it.
+// We do a little hack here to avoid double codding; we call bool_true_value directly
+// on the value of the environment variable and iterpret the return value.
 named!(bool_env_value<&[u8], ScalarValue>,
        chain!(
                tag!("$") ~
@@ -416,10 +417,9 @@ named!(bool_env_value<&[u8], ScalarValue>,
                alt!(tag!("L") | tag!("l")),
                || {
                   use std::env;
-                  if let Ok(value) = env::var(n) {
-                    let v = value.to_lowercase();
-                    if v == "true" || v == "yes" || v == "on" || v == "1" {
-                      ScalarValue::Boolean(true)
+                  if let Ok(value) = env::var(&n) {
+                    if let IResult::Done(_, output) = bool_true_value(value.as_bytes()) {
+                      output
                     } else {
                       ScalarValue::Boolean(false)
                     }
@@ -473,7 +473,7 @@ named!(string_env_value<&[u8], ScalarValue>,
                alt!(tag!("R") | tag!("r")),
                || {
                   use std::env;
-                  if let Ok(value) = env::var(n) {
+                  if let Ok(value) = env::var(&n) {
                     ScalarValue::Str(value)
                   } else {
                     ScalarValue::Str("".to_string())
@@ -540,7 +540,7 @@ named!(int_env_value<&[u8], ScalarValue>,
              alt!(tag!("T") | tag!("t")),
              || {
                 use std::env;
-                if let Ok(value) = env::var(n) {
+                if let Ok(value) = env::var(&n) {
                   if let IResult::Done(_, output) = int64_scalar_value(value.as_bytes()) {
                     output
                   } else if let IResult::Done(_, output) = int32_scalar_value(value.as_bytes()) {
@@ -652,7 +652,7 @@ named!(flt_env_value<&[u8], ScalarValue>,
              alt!(tag!("T") | tag!("t")),
              || {
                 use std::env;
-                if let Ok(value) = env::var(n) {
+                if let Ok(value) = env::var(&n) {
                   if let IResult::Done(_, output) = flt64_scalar_value(value.as_bytes()) {
                     output
                   } else if let IResult::Done(_, output) = flt32_scalar_value(value.as_bytes()) {
