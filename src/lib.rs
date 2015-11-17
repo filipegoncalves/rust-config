@@ -160,22 +160,34 @@
 //!               | integer64_scalar_value
 //!               | integer32_scalar_value
 //!               | str_scalar_value
+//!               | auto_env_scalar_value
 //!
 //! boolean_scalar_value -> [Tt][Rr][Uu][Ee]
 //!                       | [Yy][Ee][Ss]
+//!                       | [Oo][Nn]
 //!                       | [Ff][Aa][Ll][Ss][Ee]
 //!                       | [Nn][Oo]
+//!                       | [Oo][Ff][Ff]
+//!                       | $"ENV_VAR_NAME"::bool
 //!
 //! floating64_scalar_value -> [+-]?([0-9]+\.[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?"L"
+//!                          | $"ENV_VAR_NAME"::flt
 //!
 //! floating32_scalar_value -> [+-]?([0-9]+\.[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?
+//!                          | $"ENV_VAR_NAME"::flt
 //!
 //! integer32_scalar_value -> [+-]?[0-9]+
+//!                         | $"ENV_VAR_NAME"::int
 //!
 //! integer64_scalar_value -> [+-]?[0-9]+"L"
+//!                         | $"ENV_VAR_NAME"::int
 //!
 //! str_scalar_value -> __ str_literal __
 //!                   | __ str_literal __ str_scalar_value
+//!                   | $"ENV_VAR_NAME"::str
+//!
+//! auto_env_scalar_value -> $"ENV_VAR_NAME"::auto
+//!                        | $"ENV_VAR_NAME"
 //!
 //! str_literal -> "\"" ([^\"\\]|(("\\r"|"\\n"|"\\t"|"\\\""|"\\\\")))* "\""
 //!
