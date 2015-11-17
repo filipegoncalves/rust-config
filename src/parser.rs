@@ -154,6 +154,7 @@ use std::iter;
 use types::{SettingsList, Setting, Value, ScalarValue, ArrayValue, ListValue, Config};
 
 use nom::{alpha, alphanumeric, digit, multispace, not_line_ending, eof};
+use nom::IResult;
 use nom::IResult::*;
 
 pub type ParseError = u32;
