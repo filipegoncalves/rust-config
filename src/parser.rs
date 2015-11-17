@@ -555,6 +555,8 @@ named!(int_env_value<&[u8], ScalarValue>,
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Floating point values parser and auxiliary parsers ~~~
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// TODO(filipegoncalves) This calls flt_env_value, and flt_env_value
+// calls flt64_scalar_value and flt32_scalar_Value
 named!(flt_scalar_value<&[u8], ScalarValue>,
        alt!(flt64_scalar_value | flt32_scalar_value | flt_env_value));
 
@@ -596,7 +598,7 @@ named!(flt32_scalar_value_tentative<&[u8], Result<f32, <f32 as FromStr>::Err> >,
        chain!(
            s: map_res!(alt!(tag!("+") | tag!("-")), from_utf8)? ~
            b: flt_base ~
-           e: flt_exponent?,
+           e: complete!(flt_exponent)?,
            || {
                let (base_bef, base_after) = b;
                let (exp_sign, exp_val) = e.unwrap_or(("+", "0"));
@@ -640,6 +642,7 @@ named!(flt64_scalar_value<&[u8], ScalarValue>,
 // variable $ENV_VAR_NAME as Floating and try to parse it. On parsing error it returns Floating32(0).
 // We do a little hack here to avoid double codding; we call flt32_scalar_value and flt64_scalar_value directly 
 // on the value of the environment variable and iterpret the return value.
+// TODO(filipegoncalves) Generate errors if something fails
 named!(flt_env_value<&[u8], ScalarValue>,
        chain!(
              tag!("$") ~
@@ -652,17 +655,17 @@ named!(flt_env_value<&[u8], ScalarValue>,
              || {
                 use std::env;
                 if let Ok(value) = env::var(&n) {
-                  if let IResult::Done(_, output) = flt64_scalar_value(value.as_bytes()) {
-                    output
-                  } else if let IResult::Done(_, output) = flt32_scalar_value(value.as_bytes()) {
-                    output
-                  } else {
-                    ScalarValue::Floating32(0f32)
-                  }
+                    if let IResult::Done(_, output) = flt64_scalar_value(value.as_bytes()) {
+                        output
+                    } else if let IResult::Done(_, output) = flt32_scalar_value(value.as_bytes()) {
+                        output
+                    } else {
+                        ScalarValue::Floating32(0f32)
+                    }
                 } else {
                     ScalarValue::Floating32(0f32)
                 }
-              } ));
+             }));
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Parser to ignore useless stuff: comments, new lines, ... ~~~
@@ -1496,6 +1499,13 @@ mod test {
     }
 
     #[test]
+    fn flt32_as_scalar3() {
+        let input = &b"3.1415"[..];
+        let res = flt32_scalar_value(input);
+        assert_eq!(res, Done(&b""[..], ScalarValue::Floating32(3.1415)));
+    }
+
+    #[test]
     fn flt64_as_scalar() {
         let input = &b"1.E3L\r\n\r\n"[..];
         let res = flt64_scalar_value(input);
@@ -1507,6 +1517,13 @@ mod test {
         let input = &b"1.5L\r\n\r\n"[..];
         let res = flt64_scalar_value(input);
         assert_eq!(res, Done(&b"\r\n\r\n"[..], ScalarValue::Floating64(1.5)));
+    }
+
+    #[test]
+    fn flt64_as_scalar3() {
+        let input = &b"3.1415L"[..];
+        let res = flt64_scalar_value(input);
+        assert_eq!(res, Done(&b""[..], ScalarValue::Floating64(3.1415)));
     }
 
     #[test]
@@ -3520,6 +3537,7 @@ mod test {
     }
 
     #[test]
+    // TODO(filipegoncalves) Refactor this into separate tests.
     fn env_scalar_values() {
         // Set up environment variables
         use std::env;
