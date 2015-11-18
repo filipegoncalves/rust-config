@@ -107,15 +107,21 @@
 //!
 //!  * `$"SOME_ENV_VAR_NAME"::str` to inject the environment variables `SOME_ENV_VAR_NAME` as the string value.
 //!    No additiocal changes are made ot the value.
-//!  * `$"SOME_ENV_VAR_NAME"::bool` to inject the environment variables `SOME_ENV_VAR_NAME` as the boolean value.
+//!  * `$"SOME_ENV_VAR_NAME"::bool` to inject the environment variable `SOME_ENV_VAR_NAME` as the boolean value.
 //!    The value `true` or `yes` or `on` or `1` are converted into `true` otherwise into `false`.  
-//!  * `$"SOME_ENV_VAR_NAME"::int` to inject the environment variables `SOME_ENV_VAR_NAME` as the integer value.
+//!  * `$"SOME_ENV_VAR_NAME"::int` to inject the environment variable `SOME_ENV_VAR_NAME` as the integer value.
 //!    The successfully parsed value is injected as `i32` or `i64`, depending on the format, otherwise `0i32` is injected.  
-//!  * `$"SOME_ENV_VAR_NAME"::flt` to inject the environment variables `SOME_ENV_VAR_NAME` as the floating value.
+//!  * `$"SOME_ENV_VAR_NAME"::flt` to inject the environment variable `SOME_ENV_VAR_NAME` as the floating value.
 //!    The successfully parsed value is injected as `f32` or `f64`, depending on the format, otherwise `0f32` is injected.  
+//!  * `$"SOME_ENV_VAR_NAME"::auto` or `$"SOME_ENV_VAR_NAME"` to inject the environment variable `SOME_ENV_VAR_NAME`
+//!    and resolve the type automatically. Rules of the type auto-resolution:  
+//!    - If the value is *True* or *Yes* or *On* then the result type is `boolean True`;  
+//!    - If the value is *False* or *No* or *Off* then the result type is `boolean False`;  
+//!    - If the value is floating then the result type is `floating`;  
+//!    - If the value is integer then the result type is `integer`;  
+//!    - Otherwise the result is `string` value.  
 //!
-//!
-//! **Example**:
+//!**Example**:
 //!
 //! ```ignore
 //! #!/bin/sh
@@ -154,22 +160,34 @@
 //!               | integer64_scalar_value
 //!               | integer32_scalar_value
 //!               | str_scalar_value
+//!               | auto_env_scalar_value
 //!
 //! boolean_scalar_value -> [Tt][Rr][Uu][Ee]
 //!                       | [Yy][Ee][Ss]
+//!                       | [Oo][Nn]
 //!                       | [Ff][Aa][Ll][Ss][Ee]
 //!                       | [Nn][Oo]
+//!                       | [Oo][Ff][Ff]
+//!                       | $"ENV_VAR_NAME"::bool
 //!
 //! floating64_scalar_value -> [+-]?([0-9]+\.[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?"L"
+//!                          | $"ENV_VAR_NAME"::flt
 //!
 //! floating32_scalar_value -> [+-]?([0-9]+\.[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?
+//!                          | $"ENV_VAR_NAME"::flt
 //!
 //! integer32_scalar_value -> [+-]?[0-9]+
+//!                         | $"ENV_VAR_NAME"::int
 //!
 //! integer64_scalar_value -> [+-]?[0-9]+"L"
+//!                         | $"ENV_VAR_NAME"::int
 //!
 //! str_scalar_value -> __ str_literal __
 //!                   | __ str_literal __ str_scalar_value
+//!                   | $"ENV_VAR_NAME"::str
+//!
+//! auto_env_scalar_value -> $"ENV_VAR_NAME"::auto
+//!                        | $"ENV_VAR_NAME"
 //!
 //! str_literal -> "\"" ([^\"\\]|(("\\r"|"\\n"|"\\t"|"\\\""|"\\\\")))* "\""
 //!

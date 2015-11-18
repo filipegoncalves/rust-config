@@ -244,7 +244,8 @@ named!(scalar_value<&[u8], ScalarValue>,
            boolean_scalar_value |
            flt_scalar_value |
            int_scalar_value |
-           str_scalar_value));
+           str_scalar_value |
+           auto_env_scalar_value));
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Array parser and auxiliary parsers ~~~
@@ -667,6 +668,48 @@ named!(flt_env_value<&[u8], ScalarValue>,
                 }
              }));
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~~ Auto type environment variable parser ~~~
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+named!(auto_env_scalar_value<&[u8], ScalarValue>,
+       chain!(
+             tag!("$") ~
+             n: string_literal ~
+             opt!(chain!(
+                        tag!(":") ~
+                        tag!(":") ~
+                        alt!(tag!("A") | tag!("a")) ~
+                        alt!(tag!("U") | tag!("u")) ~
+                        alt!(tag!("T") | tag!("t")) ~
+                        alt!(tag!("O") | tag!("o")),
+                        || {} )),
+             || {
+                use std::env;
+                // TODO(filipegoncalves) Handle error case
+                // NOTE(workanator) I think that is the proper implementation on the parser which
+                //                  should not generate any errors here. Contact me if you like
+                //                  to discuss that.
+                if let Ok(value) = env::var(&n) {
+                  if let IResult::Done(_, output) = bool_true_value(value.as_bytes()) {
+                    output
+                  } else if let IResult::Done(_, output) = bool_false_value(value.as_bytes()) {
+                    output
+                  } else if let IResult::Done(_, output) = flt64_scalar_value(value.as_bytes()) {
+                    output
+                  } else if let IResult::Done(_, output) = flt32_scalar_value(value.as_bytes()) {
+                    output
+                  } else if let IResult::Done(_, output) = int64_scalar_value(value.as_bytes()) {
+                    output
+                  } else if let IResult::Done(_, output) = int32_scalar_value(value.as_bytes()) {
+                    output
+                  } else {
+                    ScalarValue::Str(value)
+                  }
+                } else {
+                    ScalarValue::Str("".to_string())
+                }
+              } ));
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Parser to ignore useless stuff: comments, new lines, ... ~~~
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -842,7 +885,7 @@ mod test {
     use super::{escaped_seq, not_escaped_seq, string_literal, str_scalar_value};
     use super::{eol, comment_one_line, comment_block, blanks};
     use super::{flt_base_w_digits_bef_dot, flt_base_no_digits_bef_dot, flt_base, flt_exponent};
-    use super::{flt32_scalar_value, flt64_scalar_value, flt_scalar_value};
+    use super::{flt32_scalar_value, flt64_scalar_value, flt_scalar_value, auto_env_scalar_value};
     use super::{int32_scalar_value, int64_scalar_value, int_scalar_value};
     use super::{bool_true_value, bool_false_value, boolean_scalar_value, scalar_value};
     use super::{boolean_array_elements, str_array_elements};
@@ -3537,17 +3580,11 @@ mod test {
     }
 
     #[test]
-    // TODO(filipegoncalves) Refactor this into separate tests.
-    fn env_scalar_values() {
+    fn env_bool_scalar_values() {
         // Set up environment variables
         use std::env;
         env::set_var("TEST_BOOL", "Yes");
-        env::set_var("TEST_INT32", "-42");
-        env::set_var("TEST_INT64", "+42L");
-        env::set_var("TEST_FLT32", "3.1415");
-        env::set_var("TEST_FLT64", "-3.1415L");
 
-        // Test boolean
         let input = &b"$\"TEST_BOOL\"::bool;\n"[..];
         let res = boolean_scalar_value(input);
         assert_eq!(res, Done(&b";\n"[..], ScalarValue::Boolean(true)));
@@ -3556,48 +3593,155 @@ mod test {
         let res = boolean_scalar_value(input);
         assert_eq!(res, Done(&b";\n"[..], ScalarValue::Boolean(false)));
 
-        // Test string
-        let input = &b"$\"TEST_BOOL\"::str;\n"[..];
-        let res = str_scalar_value(input);
-        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Str("Yes".to_string())));
+        let input = &b"$\"TEST_BOOL\"::auto;\n"[..];
+        let res = auto_env_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Boolean(true)));
 
-        let input = &b"$\"TEST_BOOL_NOT_FOUND\"::str;\n"[..];
+        env::set_var("TEST_BOOL", "False");
+        let input = &b"$\"TEST_BOOL\";\n"[..];
+        let res = auto_env_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Boolean(false)));
+    }
+
+    #[test]
+    fn env_str_scalar_values() {
+        // Set up environment variables
+        use std::env;
+        env::set_var("TEST_STR", "Env");
+
+        let input = &b"$\"TEST_STR\"::str;\n"[..];
+        let res = str_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Str("Env".to_string())));
+
+        let input = &b"$\"TEST_STR_NOT_FOUND\"::str;\n"[..];
         let res = str_scalar_value(input);
         assert_eq!(res, Done(&b";\n"[..], ScalarValue::Str("".to_string())));
 
-        // Test integer
+        let input = &b"$\"TEST_STR\"::auto;\n"[..];
+        let res = auto_env_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Str("Env".to_string())));
+
+        let input = &b"$\"TEST_STR\";\n"[..];
+        let res = auto_env_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Str("Env".to_string())));
+    }
+
+    #[test]
+    fn env_int32_scalar_values() {
+        // Set up environment variables
+        use std::env;
+        env::set_var("TEST_INT32", "-42");
+
         let input = &b"$\"TEST_INT32\"::int;\n"[..];
         let res = int_scalar_value(input);
         assert_eq!(res, Done(&b";\n"[..], ScalarValue::Integer32(-42i32)));
+
+        let input = &b"$\"TEST_INT32_NOT_FOUND\"::int;\n"[..];
+        let res = int_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Integer32(0i32)));
+
+        let input = &b"$\"TEST_INT32\"::auto;\n"[..];
+        let res = auto_env_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Integer32(-42i32)));
+
+        let input = &b"$\"TEST_INT32\";\n"[..];
+        let res = auto_env_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Integer32(-42i32)));
+    }
+
+    #[test]
+    fn env_int64_scalar_values() {
+        // Set up environment variables
+        use std::env;
+        env::set_var("TEST_INT64", "+42L");
 
         let input = &b"$\"TEST_INT64\"::int;\n"[..];
         let res = int_scalar_value(input);
         assert_eq!(res, Done(&b";\n"[..], ScalarValue::Integer64(42i64)));
 
-        let input = &b"$\"TEST_INT_NOT_FOUND\"::int;\n"[..];
-        let res = int_scalar_value(input);
-        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Integer32(0i32)));
+        let input = &b"$\"TEST_INT64\"::auto;\n"[..];
+        let res = auto_env_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Integer64(42i64)));
 
-        // Test float
+        let input = &b"$\"TEST_INT64\";\n"[..];
+        let res = auto_env_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Integer64(42i64)));
+    }
+
+    #[test]
+    fn env_flt32_scalar_values() {
+        // Set up environment variables
+        use std::env;
+        env::set_var("TEST_FLT32", "3.1415");
+
         let input = &b"$\"TEST_FLT32\"::flt;\n"[..];
-        if let Done(_, ScalarValue::Floating32(value)) = flt_scalar_value(input) {
+        let res = flt_scalar_value(input);
+        if let Done(_, ScalarValue::Floating32(value)) = res {
           assert!(value > 3.1414 && value < 3.1416);
         } else {
-          panic!("Failed to read env f32");
+          panic!("Failed to read env f32: {:?}", res);
         }
 
-        let input = &b"$\"TEST_FLT64\"::flt;\n"[..];
-        if let Done(_, ScalarValue::Floating64(value)) = flt_scalar_value(input) {
-          assert!(value > -3.1416 && value < -3.1414);
-        } else {
-          panic!("Failed to read env f64");
-        }
-
-        let input = &b"$\"TEST_FLT_NOT_FOUND\"::flt;\n"[..];
-        if let Done(_, ScalarValue::Floating32(value)) = flt_scalar_value(input) {
+        let input = &b"$\"TEST_FLT32_NOT_FOUND\"::flt;\n"[..];
+        let res = flt_scalar_value(input);
+        if let Done(_, ScalarValue::Floating32(value)) = res {
           assert!(value > -0.0001 && value < 0.0001);
         } else {
-          panic!("Failed to read fake env float");
+          panic!("Failed to read fake env float: {:?}", res);
         }
+
+        let input = &b"$\"TEST_FLT32\"::auto;\n"[..];
+        let res = auto_env_scalar_value(input);
+        if let Done(_, ScalarValue::Floating32(value)) = res {
+          assert!(value > 3.1414 && value < 3.1416);
+        } else {
+          panic!("Failed to read env f32: {:?}", res);
+        }
+
+        let input = &b"$\"TEST_FLT32\";\n"[..];
+        let res = auto_env_scalar_value(input);
+        if let Done(_, ScalarValue::Floating32(value)) = res {
+          assert!(value > 3.1414 && value < 3.1416);
+        } else {
+          panic!("Failed to read env f32: {:?}", res);
+        }
+    }
+
+    #[test]
+    fn env_flt64_scalar_values() {
+        // Set up environment variables
+        use std::env;
+        env::set_var("TEST_FLT64", "-3.1415L");
+
+        let input = &b"$\"TEST_FLT64\"::flt;\n"[..];
+        let res = flt_scalar_value(input);
+        if let Done(_, ScalarValue::Floating64(value)) = res {
+          assert!(value > -3.1416 && value < -3.1414);
+        } else {
+          panic!("Failed to read env f64: {:?}", res);
+        }
+
+        let input = &b"$\"TEST_FLT64\"::auto;\n"[..];
+        let res = auto_env_scalar_value(input);
+        if let Done(_, ScalarValue::Floating64(value)) = res {
+          assert!(value > -3.1416 && value < -3.1414);
+        } else {
+          panic!("Failed to read env f64: {:?}", res);
+        }
+
+        let input = &b"$\"TEST_FLT64\";\n"[..];
+        let res = auto_env_scalar_value(input);
+        if let Done(_, ScalarValue::Floating64(value)) = res {
+          assert!(value > -3.1416 && value < -3.1414);
+        } else {
+          panic!("Failed to read env f64: {:?}", res);
+        }
+    }
+
+    #[test]
+    fn env_missing_auto_scalar_values() {
+        let input = &b"$\"TEST_NOT_FOUND\";\n"[..];
+        let res = auto_env_scalar_value(input);
+        assert_eq!(res, Done(&b";\n"[..], ScalarValue::Str("".to_string())));
     }
 }
