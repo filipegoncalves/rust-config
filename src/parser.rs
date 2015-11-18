@@ -153,9 +153,8 @@ use std::iter;
 
 use types::{SettingsList, Setting, Value, ScalarValue, ArrayValue, ListValue, Config};
 
-use nom::{alpha, alphanumeric, digit, multispace, not_line_ending};
+use nom::{alpha, alphanumeric, digit, multispace, not_line_ending, eof};
 use nom::IResult;
-use nom::Err::Code;
 use nom::IResult::*;
 
 pub type ParseError = u32;
@@ -557,6 +556,8 @@ named!(int_env_value<&[u8], ScalarValue>,
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Floating point values parser and auxiliary parsers ~~~
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// TODO(filipegoncalves) This calls flt_env_value, and flt_env_value
+// calls flt64_scalar_value and flt32_scalar_Value
 named!(flt_scalar_value<&[u8], ScalarValue>,
        alt!(flt64_scalar_value | flt32_scalar_value | flt_env_value));
 
@@ -598,7 +599,7 @@ named!(flt32_scalar_value_tentative<&[u8], Result<f32, <f32 as FromStr>::Err> >,
        chain!(
            s: map_res!(alt!(tag!("+") | tag!("-")), from_utf8)? ~
            b: flt_base ~
-           e: flt_exponent?,
+           e: complete!(flt_exponent)?,
            || {
                let (base_bef, base_after) = b;
                let (exp_sign, exp_val) = e.unwrap_or(("+", "0"));
@@ -642,6 +643,7 @@ named!(flt64_scalar_value<&[u8], ScalarValue>,
 // variable $ENV_VAR_NAME as Floating and try to parse it. On parsing error it returns Floating32(0).
 // We do a little hack here to avoid double codding; we call flt32_scalar_value and flt64_scalar_value directly 
 // on the value of the environment variable and iterpret the return value.
+// TODO(filipegoncalves) Generate errors if something fails
 named!(flt_env_value<&[u8], ScalarValue>,
        chain!(
              tag!("$") ~
@@ -654,17 +656,17 @@ named!(flt_env_value<&[u8], ScalarValue>,
              || {
                 use std::env;
                 if let Ok(value) = env::var(&n) {
-                  if let IResult::Done(_, output) = flt64_scalar_value(value.as_bytes()) {
-                    output
-                  } else if let IResult::Done(_, output) = flt32_scalar_value(value.as_bytes()) {
-                    output
-                  } else {
-                    ScalarValue::Floating32(0f32)
-                  }
+                    if let IResult::Done(_, output) = flt64_scalar_value(value.as_bytes()) {
+                        output
+                    } else if let IResult::Done(_, output) = flt32_scalar_value(value.as_bytes()) {
+                        output
+                    } else {
+                        ScalarValue::Floating32(0f32)
+                    }
                 } else {
                     ScalarValue::Floating32(0f32)
                 }
-              } ));
+             }));
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ Auto type environment variable parser ~~~
@@ -716,14 +718,14 @@ named!(blanks,
 // NOTE: In some cases, this parser is combined with others that use `not_line_ending`
 //       However, `not_line_ending` won't match `\u{2028}` or `\u{2029}`
 named!(eol,
-       alt!(tag!("\r\n") | tag!("\n") | tag!("\u{2028}") | tag!("\u{2029}")));
+       alt!(tag!("\n") | tag!("\r\n") | tag!("\u{2028}") | tag!("\u{2029}")));
 
 // Auxiliary parser to ignore one-line comments
 named!(comment_one_line,
        chain!(
            alt!(tag!("//") | tag!("#")) ~
            not_line_ending? ~
-           alt!(eol | eof),
+           alt!(eof | eol),
            || { &b""[..] }));
 
 // Auxiliary parser to ignore block comments
@@ -732,15 +734,6 @@ named!(comment_block,
            tag!("/*") ~
            take_until_and_consume!(&b"*/"[..]),
            || { &b""[..] }));
-
-// This parser is successful only if the input is over
-fn eof(input:&[u8]) -> IResult<&[u8], &[u8]> {
-    if input.len() == 0 {
-        Done(input, input)
-    } else {
-        Error(Code(0))
-    }
-}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~ End of parsers section ~~~
@@ -897,8 +890,8 @@ mod test {
     use super::{value, array, group, list};
     use super::conf;
 
-    use nom::ErrorCode;
-    use nom::Err::{Code, Position};
+    use nom::ErrorKind;
+    use nom::Err::Position;
     use nom::IResult::*;
 
     use types::{Setting, SettingsList, Value, ScalarValue, Config};
@@ -943,14 +936,14 @@ mod test {
     fn setting_name_bad_num_prefix() {
         let a_setting = &b"12_xxx"[..];
         let res = setting_name(a_setting);
-        assert_eq!(res, Error(Position(ErrorCode::Alpha as u32, b"12_xxx")));
+        assert_eq!(res, Error(Position(ErrorKind::Alpha, &b"12_xxx"[..])));
     }
 
     #[test]
     fn setting_name_bad_symbol_prefix() {
         let a_setting = &b"__not_allowed"[..];
         let res = setting_name(a_setting);
-        assert_eq!(res, Error(Position(ErrorCode::Alpha as u32, b"__not_allowed")));
+        assert_eq!(res, Error(Position(ErrorKind::Alpha, &b"__not_allowed"[..])));
     }
 
     #[test]
@@ -1090,14 +1083,14 @@ mod test {
     fn bad_escape_sequence1() {
         let bad_escaped_seq = &b"\\q"[..];
         let res = escaped_seq(bad_escaped_seq);
-        assert_eq!(res, Error(Position(ErrorCode::Alt as u32, b"\\q")));
+        assert_eq!(res, Error(Position(ErrorKind::Alt, &b"\\q"[..])));
     }
 
     #[test]
     fn bad_escape_sequence2() {
         let bad_escape_seq = &b"aaa"[..];
         let res = escaped_seq(bad_escape_seq);
-        assert_eq!(res, Error(Position(ErrorCode::Alt as u32, b"aaa")));
+        assert_eq!(res, Error(Position(ErrorKind::Alt, &b"aaa"[..])));
     }
 
     #[test]
@@ -1210,7 +1203,7 @@ mod test {
     fn end_of_line1() {
         let input = &b"a test\n"[..];
         let res = eol(input);
-        assert_eq!(res, Error(Position(ErrorCode::Alt as u32, b"a test\n")));
+        assert_eq!(res, Error(Position(ErrorKind::Alt, &b"a test\n"[..])));
     }
 
     #[test]
@@ -1238,7 +1231,7 @@ mod test {
     fn one_line_comment_bad() {
         let input = &b"not a comment // see?"[..];
         let res = comment_one_line(input);
-        assert_eq!(res, Error(Position(ErrorCode::Alt as u32, b"not a comment // see?")));
+        assert_eq!(res, Error(Position(ErrorKind::Alt, &b"not a comment // see?"[..])));
     }
 
     #[test]
@@ -1273,7 +1266,7 @@ mod test {
     fn comment_blk_bad() {
         let input = &b"not a comment /* see?"[..];
         let res = comment_block(input);
-        assert_eq!(res, Error(Position(ErrorCode::Tag as u32, b"not a comment /* see?")));
+        assert_eq!(res, Error(Position(ErrorKind::Tag, &b"not a comment /* see?"[..])));
     }
 
     #[test]
@@ -1373,7 +1366,7 @@ mod test {
     fn flt_base_w_digits_before_dot() {
         let input = &b".4435"[..];
         let res = flt_base_w_digits_bef_dot(input);
-        assert_eq!(res, Error(Position(ErrorCode::Digit as u32, b".4435")));
+        assert_eq!(res, Error(Position(ErrorKind::Digit, &b".4435"[..])));
     }
 
     #[test]
@@ -1415,7 +1408,7 @@ mod test {
     fn flt_base_no_digits_before_dot() {
         let input = &b"0.0"[..];
         let res = flt_base_no_digits_bef_dot(input);
-        assert_eq!(res, Error(Position(ErrorCode::Tag as u32, b"0.0")));
+        assert_eq!(res, Error(Position(ErrorKind::Tag, &b"0.0"[..])));
     }
 
     #[test]
@@ -1429,7 +1422,7 @@ mod test {
     fn flt_base_no_digits_before_dot3() {
         let input = &b".\n"[..];
         let res = flt_base_no_digits_bef_dot(input);
-        assert_eq!(res, Error(Position(ErrorCode::Digit as u32, b"\n" /* dot is consumed */)));
+        assert_eq!(res, Error(Position(ErrorKind::Digit, &b"\n"[..] /* dot is consumed */)));
     }
 
     #[test]
@@ -1492,7 +1485,7 @@ mod test {
     fn flt_exponent_value() {
         let input = &b"eee"[..];
         let res = flt_exponent(input);
-        assert_eq!(res, Error(Position(ErrorCode::Digit as u32, b"ee" /* one e consumed */)));
+        assert_eq!(res, Error(Position(ErrorKind::Digit, &b"ee"[..] /* one e consumed */)));
     }
 
     #[test]
@@ -1545,6 +1538,13 @@ mod test {
     }
 
     #[test]
+    fn flt32_as_scalar3() {
+        let input = &b"3.1415"[..];
+        let res = flt32_scalar_value(input);
+        assert_eq!(res, Done(&b""[..], ScalarValue::Floating32(3.1415)));
+    }
+
+    #[test]
     fn flt64_as_scalar() {
         let input = &b"1.E3L\r\n\r\n"[..];
         let res = flt64_scalar_value(input);
@@ -1556,6 +1556,13 @@ mod test {
         let input = &b"1.5L\r\n\r\n"[..];
         let res = flt64_scalar_value(input);
         assert_eq!(res, Done(&b"\r\n\r\n"[..], ScalarValue::Floating64(1.5)));
+    }
+
+    #[test]
+    fn flt64_as_scalar3() {
+        let input = &b"3.1415L"[..];
+        let res = flt64_scalar_value(input);
+        assert_eq!(res, Done(&b""[..], ScalarValue::Floating64(3.1415)));
     }
 
     #[test]
@@ -1793,7 +1800,7 @@ mod test {
     fn integer_scalar_value() {
         let input = &b"-------"[..];
         let res = int_scalar_value(input);
-        assert_eq!(res, Error(Position(ErrorCode::Alt as u32, b"-------")));
+        assert_eq!(res, Error(Position(ErrorKind::Alt, &b"-------"[..])));
     }
 
     #[test]
@@ -2090,14 +2097,14 @@ mod test {
     fn bad_array() {
         let input = &b"[true, \"a\", 14, 19, 5.0e1];\n"[..];
         let res = array(input);
-        assert_eq!(res, Error(Position(ErrorCode::Alt as u32, b"[true, \"a\", 14, 19, 5.0e1];\n")));
+        assert_eq!(res, Error(Position(ErrorKind::Alt, &b"[true, \"a\", 14, 19, 5.0e1];\n"[..])));
     }
 
     #[test]
     fn bad_array2() {
         let input = &b"[\"a bad array\", 12, 3.0e-1, true];\n"[..];
         let res = array(input);
-        assert_eq!(res, Error(Position(ErrorCode::Alt as u32, b"[\"a bad array\", 12, 3.0e-1, true];\n")));
+        assert_eq!(res, Error(Position(ErrorKind::Alt, &b"[\"a bad array\", 12, 3.0e-1, true];\n"[..])));
     }
 
     #[test]
@@ -2718,20 +2725,23 @@ mod test {
 
     #[test]
     fn conf_simple_bad_array() {
-        let parsed = conf(&b"bad_array = [\"a bad array\", 12, 3.0e-1, true];\n"[..]);
-        assert_eq!(parsed, Error(Code(0)));
+        let input = b"bad_array = [\"a bad array\", 12, 3.0e-1, true];\n";
+        let parsed = conf(&input[..]);
+        assert_eq!(parsed, Error(Position(ErrorKind::Eof, &input[..])));
     }
 
     #[test]
     fn conf_bad_array() {
-        let parsed = conf(&b"bad_array = [\"a bad array\", (\"array\", 5, 4, 2)];\n"[..]);
-        assert_eq!(parsed, Error(Code(0)));
+        let input = b"bad_array = [\"a bad array\", (\"array\", 5, 4, 2)];\n";
+        let parsed = conf(&input[..]);
+        assert_eq!(parsed, Error(Position(ErrorKind::Eof, &input[..])));
     }
 
     #[test]
     fn conf_bad_array_not_scalar() {
-        let parsed = conf(&b"bad_array = [(1, 2, 3), (4, 5, 6)];\n"[..]);
-        assert_eq!(parsed, Error(Code(0)));
+        let input = b"bad_array = [(1, 2, 3), (4, 5, 6)];\n";
+        let parsed = conf(&input[..]);
+        assert_eq!(parsed, Error(Position(ErrorKind::Eof, &input[..])));
     }
 
     #[test]
@@ -3566,6 +3576,7 @@ mod test {
     }
 
     #[test]
+    // TODO(filipegoncalves) Refactor this into separate tests.
     fn env_scalar_values() {
         // Set up environment variables
         use std::env;
