@@ -685,6 +685,10 @@ named!(auto_env_scalar_value<&[u8], ScalarValue>,
                         || {} )),
              || {
                 use std::env;
+                // TODO(filipegoncalves) Handle error case
+                // NOTE(workanator) I think that is the proper implementation on the parser which
+                //                  should not generate any errors here. Contact me if you like
+                //                  to discuss that.
                 if let Ok(value) = env::var(&n) {
                   if let IResult::Done(_, output) = bool_true_value(value.as_bytes()) {
                     output
