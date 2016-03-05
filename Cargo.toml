@@ -11,4 +11,4 @@ repository = "https://github.com/filipegoncalves/rust-config"
 readme = "README.md"
 
 [dependencies]
-nom = "~1.0.0"
+nom = "~1"
