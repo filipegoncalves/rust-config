@@ -245,7 +245,7 @@
 //! ```
 //!
 
-#![crate_name = "config"]
+#![crate_name = "libconfig"]
 #![crate_type = "lib"]
 #![warn(missing_docs)]
 
